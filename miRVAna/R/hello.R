@@ -893,18 +893,24 @@ heatmap_mod <- function(data, metadata, field, case, distance, method, show_cols
   row_dendro_list <- dendrogram_to_list(as.dendrogram(row_clust))
   col_dendro_list <- dendrogram_to_list(as.dendrogram(col_clust))
 
-  # Prepare the cell data in a JSON-compatible format
+  # Get the order of rows and columns from clustering
+  ordered_rows <- rownames(data)[row_clust$order]  # Ordered row names
+  ordered_cols <- colnames(data)[col_clust$order]  # Ordered column names
+
+  # Prepare the cell data in a JSON-compatible format, maintaining cluster order
   cell_data_list <- list()
-  for (i in 1:nrow(data)) {
-    for (j in 1:ncol(data)) {
+  for (i in seq_along(ordered_rows)) {
+    for (j in seq_along(ordered_cols)) {
+      row_index <- which(rownames(data) == ordered_rows[i])
+      col_index <- which(colnames(data) == ordered_cols[j])
+
       cell_data_list[[length(cell_data_list) + 1]] <- list(
-        row = i,
-        col = j,
-        value = data[i, j]
+        row = i,  # Use the new order for rows
+        col = j,  # Use the new order for columns
+        value = data[row_index, col_index]  # Get the value from the original data
       )
     }
   }
-
   # Extract cluster assignments
   row_clusters <- cutree(row_clust, k = cutreeRows)
   col_clusters <- cutree(col_clust, k = cutreeCols)
@@ -927,4 +933,367 @@ heatmap_mod <- function(data, metadata, field, case, distance, method, show_cols
 
   # Save the JSON string to a file
   return(heatmap_json_str)
+}
+
+ppi_interactome <- function(sig_degs) {
+  library(STRINGdb)
+  library(R.cache)
+
+  # Generate a cache key based on the input gene signatures
+  key <- cacheKey("ppi_interactome", sig_degs)
+
+  # Check if the result is already cached
+  cached_result <- loadCache(key)
+
+  if (!is.null(cached_result)) {
+    print("CACHE FOUND")
+    # Return cached data if available
+    return(cached_result$data)
+  }
+
+  sig_degs <- data.frame(Gene = sig_degs, stringsAsFactors = FALSE)
+
+  # Check if there are significant DEGs
+  if (nrow(sig_degs) == 0) {
+    stop("No significant DEGs found.")
+  }
+
+  # Initialize STRINGdb for human (taxid = 9606)
+  string_db <- STRINGdb$new(version = "11.5", species = 9606, score_threshold = 400, input_directory="/home/opencpu/GEVIS/stringdb/")
+
+  # Map gene symbols to STRING identifiers and retain both
+  sig_degs_string <- string_db$map(sig_degs, "Gene", removeUnmappedRows = TRUE)
+
+  interactions <- string_db$get_interactions(sig_degs_string$STRING_id)
+
+  # Merge interaction data with gene symbols for labeling
+  edges <- merge(interactions, sig_degs_string[, c("STRING_id", "Gene")],
+                 by.x = "from", by.y = "STRING_id")
+  edges <- merge(edges, sig_degs_string[, c("STRING_id", "Gene")],
+                 by.x = "to", by.y = "STRING_id", suffixes = c("_from", "_to"))
+
+  # Create an edge list with gene symbols and interaction types
+  edges_df <- data.frame(
+    from = edges$Gene_from,
+    to = edges$Gene_to,
+  )
+
+  # Save the result in cache
+  saveCache(list(data = edges), key)
+
+  return(edges)
+}
+
+miRNA_target <- function(miRNAs){
+  # Load the library
+  library(multiMiR)
+
+  # Retrieve the target genes
+  targets_multiMiR <- get_multimir(mirna = miRNAs, table = "predicted")
+
+  # Access the data slot
+  data_slot <- targets_multiMiR@data
+
+  # Convert to data frame
+  targets_df <- as.data.frame(data_slot)
+
+  # Check if targets_df is empty
+  if (nrow(targets_df) == 0) {
+    warning("No targets found for the specified miRNAs.")
+    return(NULL)
+  }
+
+  # Create a data frame for edges (miRNA-gene_symbol pairs)
+  edges_df <- data.frame(
+    miRNA = targets_df$mature_mirna_id,  # Assuming 'mature_mirna_id' holds the miRNA IDs
+    gene_symbol = targets_df$target_symbol,  # Use 'target_symbol' for gene symbols
+    stringsAsFactors = FALSE
+  )
+
+  edges_df <- unique(edges_df)
+
+  # View the first few rows of the edges data frame
+  return(edges_df)
+
+}
+
+functional_analysis <- function(miRNA_targets) {
+  # Load necessary libraries
+  library(clusterProfiler)
+  library(org.Hs.eg.db)
+  library(enrichplot)
+  library(ggplot2)
+
+  print(miRNA_targets)
+
+  perform_kegg_enrichment <- function(miRNA_name, target_genes) {
+    # Convert gene symbols to Entrez IDs
+    entrez_ids <- bitr(target_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+
+    # Check if conversion returned any Entrez IDs
+    if (nrow(entrez_ids) == 0) {
+      return(NULL)  # Return NULL if no valid Entrez IDs were found
+    }
+
+    # Perform KEGG enrichment analysis
+    kegg_results <- enrichKEGG(gene = entrez_ids$ENTREZID, organism = "hsa", pvalueCutoff = 0.05)
+
+    # Check if kegg_results is not NULL
+    if (is.null(kegg_results)) {
+      return(NULL)  # Early return if no results
+    }
+
+    # Add miRNA family name to the result
+    kegg_results@result$miRNA <- miRNA_name
+
+    return(kegg_results@result)
+  }
+
+  # Perform KEGG enrichment for each miRNA family and store the results
+  kegg_results_list <- lapply(names(miRNA_targets), function(miRNA_name) {
+    perform_kegg_enrichment(miRNA_name, miRNA_targets[[miRNA_name]])
+  })
+
+  # Combine all results into one data frame
+  kegg_combined <- do.call(rbind, kegg_results_list)
+
+  print(kegg_combined)
+
+  # Sort the data by p-value and then by GeneRatio (descending)
+  kegg_combined$GeneRatio <- sapply(kegg_combined$GeneRatio, function(x) {
+    # Extract the numerator and denominator from the GeneRatio (e.g., 22/170 -> 22/170)
+    ratio_parts <- strsplit(x, "/")[[1]]
+    as.numeric(ratio_parts[1]) / as.numeric(ratio_parts[2])  # Calculate the ratio
+  })
+
+  # Sort by pvalue (ascending) and then by GeneRatio (descending)
+  kegg_combined <- kegg_combined[order(kegg_combined$p.adjust, -kegg_combined$GeneRatio), ]
+
+  # Select the top 10 unique pathway descriptions
+  top_descriptions <- unique(kegg_combined$Description)[1:10]
+
+  # Filter the combined results to include only rows with the top 10 descriptions
+  top_kegg_combined <- kegg_combined[kegg_combined$Description %in% top_descriptions, ]
+
+  # Group by KEGG ID and Description, aggregating miRNAs and genes associated with each pathway
+  kegg_aggregated <- aggregate(
+    . ~ ID + Description + pvalue + p.adjust,
+    data = top_kegg_combined,
+    FUN = function(x) paste(unique(x), collapse = "/")
+  )
+
+  # Calculate the gene count for each pathway
+  kegg_aggregated$gene_count <- sapply(strsplit(kegg_aggregated$geneID, "/"), length)
+
+  # Final dataframe preparation
+  final_df <- kegg_aggregated[, c("miRNA", "ID", "Description", "pvalue", "p.adjust", "geneID", "gene_count")]
+
+  # Convert Entrez IDs to gene symbols and concatenate them for display
+  final_df$Genes <- sapply(strsplit(final_df$geneID, "/"), function(x) {
+    symbols <- convert_entrez_to_symbol(x)
+    paste(symbols, collapse = "/")
+  })
+
+  # Rename columns for the final output and convert FDR to character
+  colnames(final_df) <- c("microRNA", "KEGG ID", "Description", "p-value", "FDR", "Genes", "Count", "Gene_symbol")
+  final_df$FDR <- as.character(final_df$FDR)  # Convert FDR to character
+
+  print(final_df)
+
+  return(final_df)
+}
+
+
+functional_analysis_complete <- function(miRNA_targets) {
+  # Load necessary libraries
+  library(clusterProfiler)
+  library(org.Hs.eg.db)
+  library(enrichplot)
+  library(ReactomePA)
+  library(DOSE)
+  library(rWikiPathways)
+
+  print(miRNA_targets)
+
+  perform_kegg_enrichment <- function(miRNA_name, target_genes) {
+    # Convert gene symbols to Entrez IDs
+    entrez_ids <- bitr(target_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+
+    # Check if conversion returned any Entrez IDs
+    if (nrow(entrez_ids) == 0) {
+      return(NULL)  # Return NULL if no valid Entrez IDs were found
+    }
+
+    # Perform KEGG enrichment analysis
+    kegg_results <- enrichKEGG(gene = entrez_ids$ENTREZID, organism = "hsa", pvalueCutoff = 0.05)
+
+    # Check if kegg_results is not NULL
+    if (is.null(kegg_results)) {
+      return(NULL)  # Early return if no results
+    }
+
+    # Add miRNA family name to the result
+    kegg_results@result$miRNA <- miRNA_name
+
+    return(kegg_results@result)
+  }
+
+  perform_reactome_enrichment <- function(miRNA_name, target_genes) {
+    # Convert gene symbols to Entrez IDs
+    entrez_ids <- bitr(target_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+
+    # Perform Reactome enrichment analysis
+    reactome_results <- enrichPathway(gene = entrez_ids$ENTREZID, organism = "human", pvalueCutoff = 0.05)
+
+    if (is.null(reactome_results)) {
+      return(NULL)
+    }
+
+    reactome_results@result$miRNA <- miRNA_name
+
+    return(reactome_results@result)
+  }
+
+  perform_wikipathways_enrichment <- function(miRNA_name, target_genes) {
+    # Convert gene symbols to Entrez IDs
+    entrez_ids <- bitr(target_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+
+    # Perform WikiPathways enrichment analysis
+    wikipathways_results <- enrichWP(gene = entrez_ids$ENTREZID, organism = "Homo sapiens")
+
+    if (is.null(wikipathways_results)) {
+      return(NULL)
+    }
+
+    wikipathways_results@result$miRNA <- miRNA_name
+
+    return(wikipathways_results@result)
+  }
+
+  perform_diseaseontology_enrichment <- function(miRNA_name, target_genes) {
+    # Convert gene symbols to Entrez IDs
+    entrez_ids <- bitr(target_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+
+    # Perform Disease Ontology enrichment analysis
+    diseaseontology_results <- enrichDO(gene = entrez_ids$ENTREZID, pvalueCutoff = 0.05)
+
+    if (is.null(diseaseontology_results)) {
+      return(NULL)
+    }
+
+    diseaseontology_results@result$miRNA <- miRNA_name
+
+    return(diseaseontology_results@result)
+  }
+
+  # Perform enrichment for each miRNA family and store the results
+  kegg_results_list <- lapply(names(miRNA_targets), function(miRNA_name) {
+    perform_kegg_enrichment(miRNA_name, miRNA_targets[[miRNA_name]])
+  })
+  reactome_results_list <- lapply(names(miRNA_targets), function(miRNA_name) {
+    perform_reactome_enrichment(miRNA_name, miRNA_targets[[miRNA_name]])
+  })
+  wikipathways_results_list <- lapply(names(miRNA_targets), function(miRNA_name) {
+    perform_wikipathways_enrichment(miRNA_name, miRNA_targets[[miRNA_name]])
+  })
+  diseaseontology_results_list <- lapply(names(miRNA_targets), function(miRNA_name) {
+    perform_diseaseontology_enrichment(miRNA_name, miRNA_targets[[miRNA_name]])
+  })
+
+  # Combine all results into one data frame for each type of analysis
+  kegg_combined <- do.call(rbind, kegg_results_list)
+  reactome_combined <- do.call(rbind, reactome_results_list)
+  wikipathways_combined <- do.call(rbind, wikipathways_results_list)
+  diseaseontology_combined <- do.call(rbind, diseaseontology_results_list)
+
+  print(kegg_combined)
+  print(reactome_combined)
+  print(wikipathways_combined)
+  print(diseaseontology_combined)
+
+  # Helper function for sorting based on p-value and GeneRatio
+  sort_results <- function(results_df) {
+    results_df$GeneRatio <- sapply(results_df$GeneRatio, function(x) {
+      ratio_parts <- strsplit(x, "/")[[1]]
+      as.numeric(ratio_parts[1]) / as.numeric(ratio_parts[2])
+    })
+    results_df <- results_df[order(results_df$p.adjust, -results_df$GeneRatio), ]
+    return(results_df)
+  }
+
+  #return(list(kegg = kegg_combined, reactome = reactome_combined, wikipathways = wikipathways_combined, diseaseontology = diseaseontology_combined))
+
+
+  # Sort results by p-value and GeneRatio
+  kegg_combined <- sort_results(kegg_combined)
+  reactome_combined <- sort_results(reactome_combined)
+  wikipathways_combined <- sort_results(wikipathways_combined)
+  diseaseontology_combined <- sort_results(diseaseontology_combined)
+
+  # Select the top 10 unique pathway descriptions for each analysis
+  top_kegg_descriptions <- unique(kegg_combined$Description)[1:10]
+  top_reactome_descriptions <- unique(reactome_combined$Description)[1:10]
+  top_wikipathways_descriptions <- unique(wikipathways_combined$Description)[1:10]
+  top_diseaseontology_descriptions <- unique(diseaseontology_combined$Description)[1:10]
+
+  # Filter the results for the top descriptions
+  top_kegg_combined <- kegg_combined[kegg_combined$Description %in% top_kegg_descriptions, ]
+  top_reactome_combined <- reactome_combined[reactome_combined$Description %in% top_reactome_descriptions, ]
+  top_wikipathways_combined <- wikipathways_combined[wikipathways_combined$Description %in% top_wikipathways_descriptions, ]
+  top_diseaseontology_combined <- diseaseontology_combined[diseaseontology_combined$Description %in% top_diseaseontology_descriptions, ]
+
+  # Aggregate results and calculate gene counts for each pathway (for each analysis type)
+  aggregate_results <- function(results_df) {
+    aggregated <- aggregate(
+      . ~ ID + Description + pvalue + p.adjust,
+      data = results_df,
+      FUN = function(x) paste(unique(x), collapse = "/")
+    )
+    aggregated$gene_count <- sapply(strsplit(aggregated$geneID, "/"), length)
+    return(aggregated)
+  }
+
+  kegg_aggregated <- aggregate_results(top_kegg_combined)
+  reactome_aggregated <- aggregate_results(top_reactome_combined)
+  wikipathways_aggregated <- aggregate_results(top_wikipathways_combined)
+  diseaseontology_aggregated <- aggregate_results(top_diseaseontology_combined)
+
+  # Convert Entrez IDs to gene symbols and concatenate them for display
+  convert_and_display_genes <- function(aggregated_df) {
+    aggregated_df$Genes <- sapply(strsplit(aggregated_df$geneID, "/"), function(x) {
+      symbols <- convert_entrez_to_symbol(x)
+      paste(symbols, collapse = "/")
+    })
+    return(aggregated_df)
+  }
+
+  kegg_aggregated <- convert_and_display_genes(kegg_aggregated)
+  reactome_aggregated <- convert_and_display_genes(reactome_aggregated)
+  wikipathways_aggregated <- convert_and_display_genes(wikipathways_aggregated)
+  diseaseontology_aggregated <- convert_and_display_genes(diseaseontology_aggregated)
+
+  # Rename columns for the final output and convert FDR to character
+  rename_and_format <- function(df) {
+    colnames(df) <- c("microRNA", "ID", "Description", "p-value", "FDR", "Genes", "Count", "Gene_symbol")
+    df$FDR <- as.character(df$FDR)  # Convert FDR to character
+    return(df)
+  }
+
+  kegg_aggregated <- rename_and_format(kegg_aggregated)
+  reactome_aggregated <- rename_and_format(reactome_aggregated)
+  wikipathways_aggregated <- rename_and_format(wikipathways_aggregated)
+  diseaseontology_aggregated <- rename_and_format(diseaseontology_aggregated)
+
+  print(kegg_aggregated)
+  print(reactome_aggregated)
+  print(wikipathways_aggregated)
+  print(diseaseontology_aggregated)
+
+  return(list(kegg = kegg_aggregated, reactome = reactome_aggregated, wikipathways = wikipathways_aggregated, diseaseontology = diseaseontology_aggregated))
+}
+# Function to convert Entrez IDs to gene symbols
+convert_entrez_to_symbol <- function(entrez_ids) {
+  # Convert Entrez IDs to gene symbols using the org.Hs.eg.db package
+  symbols <- mapIds(org.Hs.eg.db, keys = entrez_ids, column = "SYMBOL", keytype = "ENTREZID", multiVals = "first")
+  return(symbols)
 }
