@@ -1,0 +1,28 @@
+{
+    "id": "BE15210C",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1707344757403.0,
+    "source_on_save": false,
+    "relative_order": 9,
+    "properties": {
+        "id": "3059d039035842fda90a513bc3436ebe",
+        "name": "logFC",
+        "title": "logFC",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1707344592,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1707344757403,
+    "read_only": false,
+    "read_only_alternatives": []
+}

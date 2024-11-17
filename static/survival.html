@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEVIS - Survival Analysis</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+    <script src="//cdn.opencpu.org/opencpu-0.4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simple-statistics/7.0.0/simple-statistics.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/gh/kdpsingh/rjs@master/r.js'></script>
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"
+        integrity="sha512-5mCB0Kvv97yTzqo0174qxPjMisck/WlK51+mw/RV7UfYbtHI8LuLR82BzZuxHUKSfbh75u9cZHgUcqrZDaBJuA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.3/dist/umd/popper.min.js"
+        integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+    <script src="css/bootstrap.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.dataTables.css" />
+    <script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
+
+
+    <style>
+        body {
+            background-color: #121212;
+            color: #FFFFFF;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            margin: 30px auto;
+            max-width: 1200px;
+            padding: 0 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: bold;
+            color: #FFA726;
+        }
+
+        h4 {
+            color: #FFFFFF;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .flex1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        /* Adjust the width ratios */
+        .dataTable-container {
+            background-color: #1E1E1E;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            flex: 0.4;
+            /* Decreased width */
+            overflow: hidden;
+            min-width: 250px;
+            /* Minimum width of the table container */
+        }
+
+        .flex1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        /* Adjust the width ratios */
+        .dataTable-container {
+            background-color: #1E1E1E;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            flex: 0.4;
+            /* Decreased width */
+            overflow: hidden;
+            min-width: 250px;
+            /* Minimum width of the table container */
+        }
+
+        .dotplot-container {
+            position: relative;
+            background-color: #1E1E1E;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            flex: 1.2;
+            /* Increased width */
+            overflow: hidden;
+            min-width: 500px;
+            /* Minimum width of the plot container */
+        }
+
+
+        .btn-secondary {
+            background-color: #FFA726;
+            border-color: #FFA726;
+            color: #FFFFFF;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #FF8C00;
+            border-color: #FF8C00;
+            transform: translateY(-2px);
+        }
+
+        table.dataTable {
+            width: 100% !important;
+            background-color: #2C2C2C;
+            border-radius: 8px;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        table.dataTable th,
+        table.dataTable td {
+            color: #FFFFFF;
+            padding: 12px;
+            text-align: left;
+        }
+
+        table.dataTable thead th {
+            background-color: #FFA726;
+            color: #121212;
+            font-weight: bold;
+        }
+
+        table.dataTable tbody tr:hover {
+            background-color: rgba(255, 138, 101, 0.2);
+            /* Hover color */
+            cursor: pointer;
+        }
+
+        /* Change the background color of the selected row */
+        table.dataTable tbody tr.selected {
+            background-color: #FF8C00 !important;
+            /* Selected row color */
+            color: #FFFFFF !important;
+            /* Text color for selected row */
+        }
+
+        /* Remove box-shadow from the selected cells */
+        #geneTable tbody tr.selected>* {
+            box-shadow: none !important;
+            /* Remove blue box-shadow */
+            color: #FFFFFF !important;
+            /* Ensure white text color for all cells */
+        }
+
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 150px;
+            height: auto;
+            padding: 8px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 5px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+
+
+        /* Ensure proper layout on smaller screens */
+        @media (max-width: 768px) {
+            .flex1 {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .dataTable-container,
+            .dotplot-container {
+                min-width: 100%;
+            }
+
+            .btn-secondary {
+                width: 100%;
+            }
+        }
+
+        .loader {
+            color: #FFA726;
+            font-size: 45px;
+            text-indent: -9999em;
+            overflow: hidden;
+            width: 1em;
+            height: 1em;
+            border-radius: 50%;
+            position: relative;
+            transform: translateZ(0);
+            animation: mltShdSpin 1.7s infinite ease, round 1.7s infinite ease;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap');
+
+        .loading-text {
+            font-family: 'Open Sans', sans-serif;
+            color: #FFA726;
+            font-size: 1.5em;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            /* Add a bit of space between the dots */
+        }
+
+        .dot {
+            opacity: 0;
+            transform: scale(0.5);
+            /* Start smaller */
+            animation: dot-pulse 1.5s infinite cubic-bezier(0.5, 0, 0.5, 1);
+        }
+
+        .dot:nth-child(1) {
+            animation-delay: 0.2s;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.4s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+
+        @keyframes mltShdSpin {
+            0% {
+                box-shadow: 0 -0.83em 0 -0.4em,
+                    0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em,
+                    0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+            }
+
+            5%,
+            95% {
+                box-shadow: 0 -0.83em 0 -0.4em,
+                    0 -0.83em 0 -0.42em, 0 -0.83em 0 -0.44em,
+                    0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+            }
+
+            10%,
+            59% {
+                box-shadow: 0 -0.83em 0 -0.4em,
+                    -0.087em -0.825em 0 -0.42em, -0.173em -0.812em 0 -0.44em,
+                    -0.256em -0.789em 0 -0.46em, -0.297em -0.775em 0 -0.477em;
+            }
+
+            20% {
+                box-shadow: 0 -0.83em 0 -0.4em, -0.338em -0.758em 0 -0.42em,
+                    -0.555em -0.617em 0 -0.44em, -0.671em -0.488em 0 -0.46em,
+                    -0.749em -0.34em 0 -0.477em;
+            }
+
+            38% {
+                box-shadow: 0 -0.83em 0 -0.4em, -0.377em -0.74em 0 -0.42em,
+                    -0.645em -0.522em 0 -0.44em, -0.775em -0.297em 0 -0.46em,
+                    -0.82em -0.09em 0 -0.477em;
+            }
+
+            100% {
+                box-shadow: 0 -0.83em 0 -0.4em, 0 -0.83em 0 -0.42em,
+                    0 -0.83em 0 -0.44em, 0 -0.83em 0 -0.46em, 0 -0.83em 0 -0.477em;
+            }
+        }
+
+        @keyframes round {
+            0% {
+                transform: rotate(0deg)
+            }
+
+            100% {
+                transform: rotate(360deg)
+            }
+        }
+
+        @keyframes dot-pulse {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1);
+                /* Increase size for pulsing effect */
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.5);
+                /* Return to initial size */
+            }
+        }
+
+        #loadingOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Semi-transparent black background */
+            z-index: 9999;
+            /* Ensure the overlay appears above other elements */
+            display: none;
+            /* Initially hidden */
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>GEVIS - Survival Analysis</h1>
+
+
+        <div class="flex1">
+            <div class="dataTable-container">
+                <table id="geneTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Gene</th>
+                            <th>pval_adj</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+                <button id="submission" type="button" class="btn btn-secondary">Submit</button>
+            </div>
+            <div class="dotplot-container">
+                <div id="loadingOverlay" style="display: none; justify-content: center; align-items: center;">
+                    <div
+                        style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                        <span class="loader"></span>
+                        <span class="loading-text" style="margin-top: 1em; margin-left: 0.5em;">Loading <span class="dot">.</span><span
+                                class="dot">.</span><span class="dot">.</span></span>
+                    </div>
+                </div>
+            
+                <div id="survival" style="width: 800px; height: 600px; display: flex; justify-content: center; align-items: center;"></div>
+                <label for="timeUnit" style="vertical-align: middle;">
+                    <span
+                        style="margin: 0; padding: 0; color: #ddd; margin-left:30px; margin-top: 28px; display: inline-block; line-height: 2.2rem;">Select
+                        Time Unit for x axis:</span>
+                </label>
+                <select id="timeUnit" class="btn btn-secondary dropdown-toggle"
+                    style="padding: 0.25rem 0.5rem; font-size: 0.875rem; margin-left: 10px; vertical-align: middle;">
+                    <option value="days" selected>Days</option>
+                    <option value="months">Months</option>
+                    <option value="years">Years</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        try {
+            ocpu.seturl("http://localhost:8004/ocpu/lib/GEVIS/R");
+        } catch (error) {
+            // If an error occurs (e.g., ocpu is not defined), reload the page
+            window.location.reload();
+        }
+
+        let table;
+        let selectedUnit = "days";
+
+        // Add the event listener for the dropdown menu
+        d3.select("#timeUnit").on("change", function () {
+            selectedUnit = d3.select(this).property("value");
+        });
+
+
+        // Function to parse URL query parameters
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        // Retrieve sessionId from query parameter
+        const sessionId = getUrlParameter('sessionId');
+
+        function createGeneDataTable(data) {
+            const maxGeneLength = 10; // Set a maximum length for gene display
+
+            const tableData = data.map(item => ({
+                Gene: item.Gene.length > maxGeneLength
+                    ? `<span title="${item.Gene}">${item.Gene.substring(0, maxGeneLength)}...</span>`
+                    : item.Gene, // Truncate if necessary, otherwise show the full name
+                rawGene: item.Gene, // Store the full gene name for use in OpenCPU requests
+                pval_adj: Number(item.pval_adj).toExponential(4) // Format p-values in scientific notation
+            }));
+
+            // Initialize DataTable
+            table = $('#geneTable').DataTable({
+                data: tableData,
+                columns: [
+                    {
+                        title: "Gene",
+                        data: "Gene",
+                        render: function (data, type, row) {
+                            return data; // Render the truncated gene with tooltip
+                        }
+                    },
+                    { title: "pval_adj", data: "pval_adj" },
+                    { title: "rawGene", data: "rawGene", visible: false } // Hidden column for raw gene
+                ],
+                destroy: true, // Allow re-initialization
+                paging: true,
+                pageLength: 5,
+                ordering: true,
+                searching: true,
+                lengthChange: false
+            });
+
+            // Handle row selection
+            $('#geneTable tbody').on('click', 'tr', function () {
+                // Deselect other rows
+                table.$('tr.selected').removeClass('selected');
+
+                // Select the clicked row
+                $(this).addClass('selected');
+            });
+        }
+        ////*******************************CACHE******************************////
+
+        // Global variable to hold plot data
+        let plotDataCache = {};
+
+        // Function to check if data is cached
+        function isPlotDataCached(geneName) {
+            return plotDataCache.hasOwnProperty(geneName);
+        }
+
+        // Function to retrieve cached data
+        function getCachedPlotData(geneName) {
+            return plotDataCache[geneName];
+        }
+
+        // Store plot data in cache
+        function cachePlotData(geneName, plotData) {
+            plotDataCache[geneName] = plotData;
+        }
+
+
+        ////*******************************************************************////
+
+        if (sessionId) {
+            // Send a fetch request to retrieve data
+            fetch(`/retrieveData?sessionId=${sessionId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        console.log(response)
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    var btn2 = document.getElementById("submission");
+                    var survivalContainer = document.getElementById("survival");
+                    console.log(data.old_p_adj);
+
+                    // Create initial DataTable
+                    createGeneDataTable(data.old_p_adj);
+
+                    survivalContainer.innerHTML = "<h3 style='color: #FFA726;'>Select a gene to start </h3>";
+
+                    // Form submission handler
+                    document.getElementById('submission').onclick = function (event) {
+                        survivalContainer.innerHTML = "";
+                        event.preventDefault(); // Prevent default form submission
+
+                        // Get the selected row data
+                        const selectedRowData = table.row('.selected').data();
+
+                        if (selectedRowData) {
+                            const selectedGene = selectedRowData.rawGene;
+
+                            // Check if plot data is cached
+                            if (isPlotDataCached(selectedGene)) {
+                                // Use cached data to generate plot
+                                const cachedData = getCachedPlotData(selectedGene);
+                                survivalplot(cachedData.data, selectedGene, cachedData.pvalue, cachedData.median);
+                                console.log(`Plot for ${selectedGene} retrieved from cache.`);
+                            } else {
+                                document.getElementById("loadingOverlay").style.display = "block";
+                                // Make the call to generate the plot
+                                survival(data.filteredMetadata, data.dataC_copy_pval, selectedGene);
+                            }
+                        } else {
+                            alert('No gene selected!');
+                        }
+                    };
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Session expired. Please, run a new enrichment analysis.');
+                });
+        } else {
+            alert('Session ID not found');
+        }
+
+        function survival(clinical, cases, genename) {
+
+            if (!clinical || clinical.length === 0 || clinical.length ===1) {
+                alert("Error: The clinical data is not available, undefined or not well structured. Check the metadata field you passed.");
+                return; // Exit the function early
+            }
+
+            console.log("tutto il dataset", clinical)
+            // console.log("i casi",cases)
+
+            var geneDataC = cases.filter(d => d.gene === genename)
+
+            console.log(clinical)
+
+            let allGSM = Object.keys(clinical[1]);
+            let allEvent = Object.values(clinical[0]);
+            let allTime_to_followUp = Object.values(clinical[1]);
+
+            let relevantGSMs = geneDataC.flatMap(item => Object.keys(item));
+
+            // Create the data structure with conditional addition
+            let dataStructure = allGSM.map((gsm, index) => {
+                // Check if the current GSM is in the relevantGSMs array
+                if (relevantGSMs.includes(gsm)) {
+                    return {
+                        GSM: gsm,
+                        Event: allEvent[index],
+                        Time_to_followUp: allTime_to_followUp[index]
+                    };
+                }
+            }).filter(Boolean); // Use filter to remove undefined values
+
+            console.log(dataStructure.length)
+            console.log(geneDataC)
+            // Extract GSM identifiers from geneDataC
+
+            console.log(relevantGSMs)
+
+            var req = ocpu.call("surv", {
+                metadata: dataStructure,
+                dataC: geneDataC,
+                gene: genename
+            }, function (session) {
+                var filteredDataURL = session.loc + "/R/.val/json";
+                console.log(filteredDataURL)
+                // Fetch the filtered data from the URL
+                fetch(filteredDataURL)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(filteredDataURL)
+                        console.log(data.median[0])
+                        survivalplot(data.obj, genename, data.pval[0].pval, data.median[0]);
+
+                        // Cache the plot data
+                        cachePlotData(genename, { data: data.obj, pvalue: data.pval[0].pval, median: data.median[0] });
+
+                        document.getElementById("submission").disabled = false;
+                    })
+
+            })
+
+        }
+
+        function survivalplot(data, name, pvalue, median) {
+            document.getElementById("loadingOverlay").style.display = 'none';
+            console.log(data);
+
+            // Calculate survival probability
+            const survivalProb = [];
+            let survival = 1; // Initial survival probability
+
+            function computeSurvivalProbability(data) {
+                const survivalProb = [];
+                let survival = 1; // Initial survival probability
+
+                for (let i = 0; i < data.time.length; i++) {
+                    const nRisk = data['n.risk'][i];
+                    const nEvent = data['n.event'][i];
+
+                    if (nRisk === 0) break; // Avoid division by zero
+
+                    const hazard = nEvent / nRisk;
+                    survival *= Math.pow((1 - hazard), 1);
+                    survivalProb.push(survival);
+                }
+                return survivalProb;
+            }
+
+            // Filter data by high and low expression
+            const highExprData = {
+                time: data[0].time.slice(0, data[0].strata[0]),
+                "n.risk": data[0]['n.risk'].slice(0, data[0].strata[0]),
+                "n.event": data[0]['n.event'].slice(0, data[0].strata[0]),
+                "n.censor": data[0]['n.censor'].slice(0, data[0].strata[0]),
+                surv: data[0].surv.slice(0, data[0].strata[0])
+            };
+
+            const lowExprData = {
+                time: data[0].time.slice(data[0].strata[0]),
+                "n.risk": data[0]['n.risk'].slice(data[0].strata[0]),
+                "n.event": data[0]['n.event'].slice(data[0].strata[0]),
+                "n.censor": data[0]['n.censor'].slice(data[0].strata[0]),
+                surv: data[0].surv.slice(data[0].strata[0])
+            };
+
+            const highExprSurvivalProb = computeSurvivalProbability(highExprData);
+            const lowExprSurvivalProb = computeSurvivalProbability(lowExprData);
+
+            const highExprPlotData = highExprData.time.map((time, index) => ({
+                time: time,
+                survivalProb: highExprSurvivalProb[index]
+            }));
+
+            const lowExprPlotData = lowExprData.time.map((time, index) => ({
+                time: time,
+                survivalProb: lowExprSurvivalProb[index]
+            }));
+
+            console.log("High Expression Data:", highExprPlotData);
+            console.log("Low Expression Data:", lowExprPlotData);
+
+            const margin = { top: 20, right: 30, bottom: 50, left: 50 },
+                width = 800 - margin.left - margin.right,
+                height = 600 - margin.top - margin.bottom;
+
+            // Check if an SVG already exists; if not, create one
+            let svg = d3.select("#survival").select("svg").select("g");
+            console.log(svg)
+            if (svg.empty()) {
+                svg = d3.select("#survival")
+                    .html("") // Clear the contents of the container
+                    .append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+                console.log(svg)
+            } else {
+                console.log(svg)
+
+                console.log("Already exists")
+                // // If SVG exists, update its dimensions
+                // svg.attr("width", width + margin.left + margin.right)
+                //     .attr("height", height + margin.top + margin.bottom)
+
+            }
+
+            // Define the scales and axes for the initial plot
+            const x = d3.scaleLinear()
+                .domain([0, d3.max(data[0].time)])
+                .range([0, width]);
+
+            const y = d3.scaleLinear()
+                .domain([0, 1])
+                .range([height, 0]);
+
+            // Create or update the x-axis
+            const xAxis = svg.selectAll(".xAxis")
+                .data([0]); // Binding a single-element array
+
+            const xAxisEnter = xAxis.enter()
+                .append("g")
+                .attr("class", "xAxis")
+                .attr("transform", `translate(0,${height})`);
+
+            // Merge enter and update selections and call the axis
+            const xAxisUpdate = xAxisEnter.merge(xAxis)
+                .call(d3.axisBottom(x));
+
+            // Style the x-axis lines and ticks AFTER merging
+            xAxisUpdate.selectAll("line, path") // Select lines and paths within xAxis
+                .style("stroke", "white");
+            xAxisUpdate.selectAll("text") // Select text within xAxis
+                .style("fill", "white");
+
+            // Create or update the y-axis
+            const yAxis = svg.selectAll(".yAxis")
+                .data([0]); // Binding a single-element array
+
+            const yAxisEnter = yAxis.enter()
+                .append("g")
+                .attr("class", "yAxis");
+
+            // Merge enter and update selections and call the axis
+            const yAxisUpdate = yAxisEnter.merge(yAxis)
+                .call(d3.axisLeft(y));
+
+            // Style the y-axis lines and ticks AFTER merging
+            yAxisUpdate.selectAll("line, path") // Select lines and paths within yAxis
+                .style("stroke", "white");
+            yAxisUpdate.selectAll("text") // Select text within yAxis
+                .style("fill", "white");
+
+            // Create or update the x-axis title
+            const xAxisTitle = svg.selectAll(".xAxisTitle")
+                .data([0]); // Binding a single-element array
+
+            const xAxisTitleEnter = xAxisTitle.enter()
+                .append("text")
+                .attr("class", "xAxisTitle")
+                .attr("x", width / 2)
+                .attr("y", height + margin.bottom - 10)
+                .attr("text-anchor", "middle")
+                .style("font-size", "14px")
+                .style("fill", "white") // Set fill to white
+                .text("Time (in Days)");
+
+            // Merge the enter selection for x-axis title
+            const xAxisTitleUpdate = xAxisTitleEnter.merge(xAxisTitle);
+
+            // Create or update the y-axis title
+            const yAxisTitle = svg.selectAll(".yAxisTitle")
+                .data([0]); // Binding a single-element array
+
+            const yAxisTitleEnter = yAxisTitle.enter()
+                .append("text")
+                .attr("class", "yAxisTitle")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", -margin.left + 12)
+                .attr("text-anchor", "middle")
+                .style("font-size", "14px")
+                .style("fill", "white") // Set fill to white
+                .text("Survival Probability");
+
+            // Merge the enter selection for y-axis title
+            yAxisTitleEnter.merge(yAxisTitle)
+                .text("Survival Probability");
+
+            // Add the event listener for the dropdown menu
+            d3.select("#timeUnit").on("change", function () {
+                selectedUnit = d3.select(this).property("value");
+                updateXAxis(selectedUnit, data[0].time, x, xAxis, xAxisTitleUpdate);
+            });
+
+            function updateXAxis(unit, timeData, xScale, axis, xAxisTitle) {
+                let updatedTimeData;
+
+                switch (unit) {
+                    case "months":
+                        updatedTimeData = timeData.map(d => d / 30.417); // Convert to months
+                        break;
+                    case "years":
+                        updatedTimeData = timeData.map(d => d / 365); // Convert to years
+                        break;
+                    default: // days
+                        updatedTimeData = timeData;
+                }
+
+                const x = d3.scaleLinear()
+                    .domain([0, d3.max(updatedTimeData)])
+                    .range([0, width]);
+
+                xAxisEnter.merge(xAxis)
+                    .transition()
+                    .duration(1000)
+                    .call(d3.axisBottom(x));
+
+                // Style the x-axis lines and ticks AFTER merging
+                xAxisUpdate.selectAll("line, path") // Select lines and paths within xAxis
+                    .style("stroke", "white");
+                xAxisUpdate.selectAll("text") // Select text within xAxis
+                    .style("fill", "white");
+
+                // Update x-axis label with capitalized unit
+                const capitalizedUnit = unit.charAt(0).toUpperCase() + unit.slice(1);
+                xAxisTitle.text("Time (in " + capitalizedUnit + ")");
+            }
+
+
+            // Select the existing legend group or create it if it doesn't exist
+            let legend = svg.select(".legend");
+
+            if (legend.empty()) {
+                // Legend does not exist, create it
+                legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", `translate(${width - 100}, 20)`);
+
+                // Append high expression rectangle and text
+                legend.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", 10)
+                    .attr("height", 10)
+                    .attr("fill", "#F8766D");
+
+                legend.append("text")
+                    .attr("x", 15)
+                    .attr("y", 8)
+                    .style("fill", "white")
+                    .text("High Expression");
+
+                // Append low expression rectangle and text
+                legend.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 20)
+                    .attr("width", 10)
+                    .attr("height", 10)
+                    .attr("fill", "#00BFC4");
+
+                legend.append("text")
+                    .attr("x", 15)
+                    .attr("y", 28)
+                    .style("fill", "white")
+                    .text("Low Expression");
+
+                // Append p-value text
+                legend.append("text")
+                    .attr("x", 15)
+                    .attr("y", 48)
+                    .style("fill", "white")
+                    .text("p-value: " + pvalue);
+            } else {
+                // Legend exists, update it
+                legend.selectAll("text")
+                    .filter((d, i) => i === 2) // Select the p-value text to update
+                    .text("p-value: " + pvalue);
+            }
+
+            // Update title text
+            svg.select("text.title") // Assuming you assign a class "title" to your title text
+                .text("Survival plot for " + name.split('|')[0] + " (median: " + parseFloat(median).toFixed(2) + ")");
+
+            // If title text doesn't exist, create it
+            if (svg.select("text.title").empty()) {
+                svg.append("text")
+                    .attr("class", "title") // Add class for future selections
+                    .attr("x", width / 2)
+                    .attr("y", 0)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "18px")
+                    .text("Survival plot for " + name.split('|')[0] + " (median: " + parseFloat(median).toFixed(2) + ")")
+                    .style("fill", "white");
+            }
+
+            // Create the line generator
+            const lineGenerator = d3.line()
+                .x(d => x(d.time))
+                .y(d => y(d.survivalProb));
+
+            // Add lines to the SVG (or update existing ones)
+            const highLine = svg.selectAll(".highLine")
+                .data([highExprPlotData]);
+
+            highLine.enter()
+                .append("path")
+                .attr("class", "highLine")
+                .attr("fill", "none")
+                .attr("stroke", "#F8766D")
+                .attr("stroke-width", 2)
+                .merge(highLine) // Merge enter and update selections
+                .transition()
+                .duration(500)
+                .attr("d", lineGenerator);
+
+            highLine.exit().remove(); // Remove old lines if necessary
+
+            const lowLine = svg.selectAll(".lowLine")
+                .data([lowExprPlotData]);
+
+            lowLine.enter()
+                .append("path")
+                .attr("class", "lowLine")
+                .attr("fill", "none")
+                .attr("stroke", "#00BFC4")
+                .attr("stroke-width", 2)
+                .merge(lowLine) // Merge enter and update selections
+                .transition()
+                .duration(500)
+                .attr("d", lineGenerator);
+
+            lowLine.exit().remove(); // Remove old lines if necessary
+
+            // Check if the crosshair group already exists
+            let crosshairGroup = svg.select(".crosshair");
+
+            if (crosshairGroup.empty()) {
+                // Add crosshairs
+                crosshairGroup = svg.append("g")
+                    .attr("class", "crosshair")
+                    .style("display", "none");
+
+                // Vertical line
+                crosshairGroup.append("line")
+                    .attr("class", "crosshair-line vertical")
+                    .attr("stroke", "gray")
+                    .attr("stroke-width", 1)
+                    .attr("stroke-dasharray", "4 4") // Dashed line
+                    .attr("y1", 0)
+                    .attr("y2", height);
+
+                // Horizontal line
+                crosshairGroup.append("line")
+                    .attr("class", "crosshair-line horizontal")
+                    .attr("stroke", "gray")
+                    .attr("stroke-width", 1)
+                    .attr("stroke-dasharray", "4 4") // Dashed line
+                    .attr("x1", 0)
+                    .attr("x2", width);
+
+                // Intersection circle
+                crosshairGroup.append("circle")
+                    .attr("class", "crosshair-circle")
+                    .attr("r", 4)
+                    .attr("stroke", "gray")
+                    .attr("fill", "white");
+            }
+
+            // Check if the tooltip already exists
+            let tooltip = d3.select("#survival").select(".tooltip");
+
+            if (tooltip.empty()) {
+                // Tooltip for showing data
+                tooltip = d3.select("#survival")
+                    .append("div")
+                    .attr("class", "tooltip")
+                    .style("opacity", 0)
+                    .style("position", "absolute")
+                    .style("background-color", "black")
+                    .style("border-radius", "5px")
+                    .style("border", "1px solid gray");
+            }
+
+            // Capture mouse events
+            const mouseCapture = svg.append("rect")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("fill", "none")
+                .attr("pointer-events", "all")
+                .on("mousemove", function () {
+                    const [mouseX, mouseY] = d3.mouse(this); // Use d3.mouse() for v4
+
+                    crosshairGroup.style("display", null);
+
+                    crosshairGroup.select(".vertical")
+                        .attr("x1", mouseX)
+                        .attr("x2", mouseX)
+                        .transition().duration(50); // Smooth transition
+
+                    crosshairGroup.select(".horizontal")
+                        .attr("y1", mouseY)
+                        .attr("y2", mouseY)
+                        .transition().duration(50); // Smooth transition
+
+                    crosshairGroup.select(".crosshair-circle")
+                        .attr("cx", mouseX)
+                        .attr("cy", mouseY)
+                        .transition().duration(50); // Smooth transition
+
+                    switch (selectedUnit) {
+                        case "months":
+                            updatedTimeData = data[0].time.map(d => d / 30.417); // Convert to months
+                            break;
+                        case "years":
+                            updatedTimeData = data[0].time.map(d => d / 365); // Convert to years
+                            break;
+                        default: // days
+                            updatedTimeData = data[0].time;
+                    }
+
+                    var xSa = d3.scaleLinear()
+                    .domain([0, d3.max(updatedTimeData)])
+                    .range([0, width]);
+
+
+                    // Convert mouse coordinates to time and survival probability
+                    const time = xSa.invert(mouseX);
+                    const survivalProb = y.invert(mouseY);
+                    const svgBounds = d3.select("svg").node().getBoundingClientRect();
+
+                    // Show tooltip
+                    tooltip.transition().duration(200).style("opacity", 0.9);
+                    tooltip.html(`Time: ${time.toFixed(2)} ${selectedUnit}<br>Survival: ${survivalProb.toFixed(2)}`)
+                        .style("left", (d3.event.pageX - svgBounds.left + 25) + "px")
+                        .style("top", (d3.event.pageY - svgBounds.top - 45) + "px");
+                })
+                .on("mouseleave", function () {
+                    crosshairGroup.style("display", "none");
+                    tooltip.transition().duration(500).style("opacity", 0);
+                });
+
+
+
+            if (selectedUnit != "days") {
+                let updatedTimeData;
+
+                switch (selectedUnit) {
+                    case "months":
+                        updatedTimeData = data[0].time.map(d => d / 30.417); // Convert to months
+                        break;
+                    case "years":
+                        updatedTimeData = data[0].time.map(d => d / 365); // Convert to years
+                        break;
+                    default: // days
+                        updatedTimeData = data[0].time;
+                }
+
+                var xSa = d3.scaleLinear()
+                    .domain([0, d3.max(updatedTimeData)])
+                    .range([0, width]);
+
+                xAxisEnter.merge(xAxis)
+                    .transition()
+                    .duration(0)
+                    .call(d3.axisBottom(xSa));
+
+                // Style the x-axis lines and ticks AFTER merging
+                xAxisUpdate.selectAll("line, path") // Select lines and paths within xAxis
+                    .style("stroke", "white");
+                xAxisUpdate.selectAll("text") // Select text within xAxis
+                    .style("fill", "white");
+
+                // Update x-axis label with capitalized unit
+                const capitalizedUni = selectedUnit.charAt(0).toUpperCase() + selectedUnit.slice(1);
+                xAxisTitleUpdate.text("Time (in " + capitalizedUni + ")");
+
+            }
+
+        }
+
+
+    </script>
+
+
+</body>
+
+</html>
