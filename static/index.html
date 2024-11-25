@@ -8048,7 +8048,7 @@
             console.log(selectedGeneData)
             d3.selectAll(".cell")
                 .filter(function () {
-                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                 })
                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -8227,7 +8227,7 @@
                     console.log(selectedGeneData)
                     d3.selectAll(".cell")
                         .filter(function () {
-                            return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                            return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                         })
                         .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -8470,7 +8470,7 @@
                     console.log(selectedGeneData)
                     d3.selectAll(".cell")
                         .filter(function () {
-                            return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                            return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                         })
                         .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -11188,7 +11188,7 @@
                 .attr("x", 20)
                 .attr("dy", 15) // Adjusted spacing for subtitle
                 .style("font-size", "10px") // Smaller font size for subtitle
-                .text("LogFC > log2(" + thr_fc + ") and");
+                .html("LogFC > log<tspan dy='5'>2</tspan> <tspan dy='-5'>(" + thr_fc + ") and</tspan>");
 
             upregulatedLegend.append("text")
                 .attr("x", 20)
@@ -11221,7 +11221,7 @@
                 .attr("x", 20)
                 .attr("dy", 15) // Adjusted spacing for subtitle
                 .style("font-size", "10px") // Smaller font size for subtitle
-                .text("LogFC < -log2(" + thr_fc + ") and");
+                .html("LogFC < -log<tspan dy='5'>2</tspan> <tspan dy='-5'>(" + thr_fc + ") and</tspan>");
 
             downregulatedLegend.append("text")
                 .attr("x", 20)
@@ -11252,7 +11252,7 @@
                 .attr("x", 20)
                 .attr("dy", 15) // Adjusted spacing for subtitle
                 .style("font-size", "10px") // Smaller font size for subtitle
-                .text("|LogFC| < log2(" + thr_fc + ") or");
+                .html("|LogFC| < log<tspan dy='5'>2</tspan> <tspan dy='-5'>(" + thr_fc + ") or</tspan>");
 
             notSignificantLegend.append("text")
                 .attr("x", 20)
@@ -11879,7 +11879,7 @@
                     console.log(selectedGeneData)
                     d3.selectAll(".cell")
                         .filter(function () {
-                            return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                            return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                         })
                         .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -12624,7 +12624,7 @@
                             console.log(selectedGeneData)
                             d3.selectAll(".cell")
                                 .filter(function () {
-                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                                 })
                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -13275,7 +13275,7 @@
                             console.log(selectedGeneData)
                             d3.selectAll(".cell")
                                 .filter(function () {
-                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                                 })
                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -13889,7 +13889,7 @@
                             console.log(selectedGeneData)
                             d3.selectAll(".cell")
                                 .filter(function () {
-                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                                 })
                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -14240,7 +14240,7 @@
                 .attr("x", 20)
                 .attr("dy", 15) // Adjusted spacing for subtitle
                 .style("font-size", "10px") // Smaller font size for subtitle
-                .text("LogFC > log2(" + thr_fc + ") and");
+                .html("LogFC > log<tspan dy='5'>2</tspan> <tspan dy='-5'>(" + thr_fc + ") and</tspan>");
 
             upregulatedLegend.append("text")
                 .attr("x", 20)
@@ -14273,7 +14273,7 @@
                 .attr("x", 20)
                 .attr("dy", 15) // Adjusted spacing for subtitle
                 .style("font-size", "10px") // Smaller font size for subtitle
-                .text("LogFC < -log2(" + thr_fc + ") and");
+                .html("LogFC < -log<tspan dy='5'>2</tspan> <tspan dy='-5'>(" + thr_fc + ") and</tspan>");
 
             downregulatedLegend.append("text")
                 .attr("x", 20)
@@ -14304,7 +14304,7 @@
                 .attr("x", 20)
                 .attr("dy", 15) // Adjusted spacing for subtitle
                 .style("font-size", "10px") // Smaller font size for subtitle
-                .text("|LogFC| < log2(" + thr_fc + ") or");
+                .html("|LogFC| < log<tspan dy='5'>2</tspan> <tspan dy='-5'>(" + thr_fc + ") or</tspan>");
 
             notSignificantLegend.append("text")
                 .attr("x", 20)
@@ -14747,7 +14747,7 @@
                     console.log(selectedGeneData)
                     d3.selectAll(".cell")
                         .filter(function () {
-                            return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                            return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                         })
                         .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -15486,7 +15486,7 @@
                             console.log(selectedGeneData)
                             d3.selectAll(".cell")
                                 .filter(function () {
-                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                                 })
                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -16137,7 +16137,7 @@
                             console.log(selectedGeneData)
                             d3.selectAll(".cell")
                                 .filter(function () {
-                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
                                 })
                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -16748,7 +16748,7 @@
                             console.log(selectedGeneData)
                             d3.selectAll(".cell")
                                 .filter(function () {
-                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");; // Select only cells that do NOT have the 'selected' class
                                 })
                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -17097,7 +17097,7 @@
                 .attr("x", 20)
                 .attr("dy", 15) // Adjusted spacing for subtitle
                 .style("font-size", "10px") // Smaller font size for subtitle
-                .text("LogFC > log2(" + thr_fc + ") and");
+                .html("LogFC > log<tspan dy='5'>2</tspan> <tspan dy='-5'>(" + thr_fc + ") and</tspan>");
 
             upregulatedLegend.append("text")
                 .attr("x", 20)
@@ -17130,7 +17130,7 @@
                 .attr("x", 20)
                 .attr("dy", 15) // Adjusted spacing for subtitle
                 .style("font-size", "10px") // Smaller font size for subtitle
-                .text("LogFC < -log2(" + thr_fc + ") and");
+                .html("LogFC < -log<tspan dy='5'>2</tspan> <tspan dy='-5'>(" + thr_fc + ") and</tspan>");
 
             downregulatedLegend.append("text")
                 .attr("x", 20)
@@ -17161,7 +17161,7 @@
                 .attr("x", 20)
                 .attr("dy", 15) // Adjusted spacing for subtitle
                 .style("font-size", "10px") // Smaller font size for subtitle
-                .text("|LogFC| < log2(" + thr_fc + ") or");
+                .html("|LogFC| < log<tspan dy='5'>2</tspan> <tspan dy='-5'>(" + thr_fc + ") or</tspan>");
 
             notSignificantLegend.append("text")
                 .attr("x", 20)
@@ -17609,7 +17609,7 @@
                     console.log(selectedGeneData)
                     d3.selectAll(".cell")
                         .filter(function () {
-                            return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                            return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");; // Select only cells that do NOT have the 'selected' class
                         })
                         .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -18348,7 +18348,7 @@
                             console.log(selectedGeneData)
                             d3.selectAll(".cell")
                                 .filter(function () {
-                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");; // Select only cells that do NOT have the 'selected' class
                                 })
                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -19000,7 +19000,7 @@
                             console.log(selectedGeneData)
                             d3.selectAll(".cell")
                                 .filter(function () {
-                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");; // Select only cells that do NOT have the 'selected' class
                                 })
                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -19611,7 +19611,7 @@
                             console.log(selectedGeneData)
                             d3.selectAll(".cell")
                                 .filter(function () {
-                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");; // Select only cells that do NOT have the 'selected' class
                                 })
                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -22981,7 +22981,7 @@
             legendGroup.append("text")
                 .attr("x", legendWidth + 5)
                 .attr("y", legendHeight / 2)
-                .text(truncateText(chosen_meta1, 8)) // Truncate if longer than 8 characters
+                .text(truncateText(chosen_meta1, 15)) // Truncate if longer than 8 characters
                 .style("font-size", "10px")
                 .attr("alignment-baseline", "middle")
                 .on("mouseover", function () {
@@ -23005,7 +23005,7 @@
             legendGroup.append("text")
                 .attr("x", legendWidth + 5)
                 .attr("y", legendHeight + legendSpacing + legendHeight / 2)
-                .text(truncateText(chosen_meta2, 8)) // Truncate if longer than 8 characters
+                .text(truncateText(chosen_meta2, 15)) // Truncate if longer than 8 characters
                 .style("font-size", "10px")
                 .attr("alignment-baseline", "middle")
                 .on("mouseover", function () {
@@ -23308,6 +23308,9 @@
             // Adjust label position
             legend.selectAll("text")
                 .attr("dy", "-0.35em"); // Adjust vertical alignment
+
+            legend.selectAll(".cell")
+                .classed("legend-cell", true); // Add the 'legend-cell' class to all existing cells
 
             console.log(dimensions)
 
