@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load the CSV file
-file_path = 'static/examples/metadata_colon.csv'  # Replace with the actual file path
+file_path = 'metadata.csv'  # Replace with the actual file path
 df = pd.read_csv(file_path)
 
 # Transpose the DataFrame
