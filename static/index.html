@@ -2350,7 +2350,8 @@
 
                 </div> <!-- End of log fold change threshold controls -->
 
-                <div style="text-align: center; font-weight: bold; color: var(--text-color); margin-bottom: 10px;">
+                <div id="upregulatedtabletitle"
+                    style="text-align: center; font-weight: bold; color: var(--text-color); margin-bottom: 10px;">
                     Up-regulated miRNAs
                 </div>
                 <div id="UpDiffTable" style="max-height: 20%; overflow-y: auto; overflow-x:hidden; width: 100%;">
@@ -2359,7 +2360,8 @@
                         style="width: 100%; height:auto; overflow-y: auto; overflow-x:hidden;"></table>
                 </div>
 
-                <div style="text-align: center; font-weight: bold; color: var(--text-color); margin-bottom: 10px;">
+                <div id="downregulatedtabletitle"
+                    style="text-align: center; font-weight: bold; color: var(--text-color); margin-bottom: 10px;">
                     Down-regulated miRNAs
                 </div>
                 <div id="DownDiffTable" style="max-height: 20%; overflow-y: auto; overflow-x:hidden; width: 100%;">
@@ -2434,7 +2436,7 @@
                     disabled>Get miRNA-mRNA interaction</button>
                 <button id="switchNetPCA" class="btn btn-secondary"
                     style="padding: 0.25rem 0.5rem; font-size: 0.80rem; margin-left:15px; display: inline-block; width: 40%; flex-grow: 0;"
-                    onclick="toggleView()">Switch Network/PCA</button>
+                    onclick="toggleView(data_copy, dataC_copy, dataN_copy)">Switch Network/PCA</button>
             </div>
             <!-- Network Graph Section -->
             <div id="networkSvgContainer" style="flex:  0 0 55%; border: 1px solid #ccc;">
@@ -2513,17 +2515,18 @@
             <div id="buttonSwitchContainer"
                 style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 10px;">
                 <button id="switchToNetwork" class="btn btn-secondary"
-                    style="padding: 0.25rem 0.5rem; font-size: 0.80rem;" onclick="toggleView()">Switch
+                    style="padding: 0.25rem 0.5rem; font-size: 0.80rem;"
+                    onclick="toggleView(data_copy, dataC_copy, dataN_copy)">Switch
                     Network/PCA</button>
             </div>
 
             <div style="display: flex; flex: 0 0 4%;">
                 <div id="checkboxContainer"
-                    style="overflow-y:scroll; color: var(--text-color); margin-left: 0%; visibility: hidden; display: flex;">
+                    style="overflow-y:hidden; color: var(--text-color); margin-left: 0%; visibility: hidden; display: flex;">
                     <!-- Checkboxes will be dynamically added here -->
                 </div>
                 <div id="radioBoxContainer"
-                    style="overflow-y:scroll; color: var(--text-color); width: 45%; margin-left: 10%; visibility: hidden; display: flex;">
+                    style="overflow-y:hidden; color: var(--text-color); width: 45%; margin-left: 10%; visibility: hidden; display: flex;">
                     <!-- Radio buttons will be dynamically added here -->
                 </div>
             </div>
@@ -2697,7 +2700,6 @@
         let currentPlot = 'volcano';
 
         let only_miRNAs = true;
-
         let zoomEnabled = true; // Flag to control zoom functionality
 
         let ridge = true
@@ -2961,7 +2963,7 @@
             dotplotContainer.innerHTML = "<h3 style='color: white'>Loading data from EnrichR.. </h3>";
         }
 
-        function toggleView() {
+        function toggleView(data_copy, dataC_copy, dataN_copy) {
             const networkContainer = document.getElementById('rightPanel');
             const rightPanel = document.getElementById('rightPanel2');
             console.log(networkContainer.style.display)
@@ -2972,7 +2974,6 @@
                 networkContainer.style.display = 'none'; // Hide Network Analysis
                 rightPanel.style.display = 'flex'; // Show PCA and Heatmap
 
-                dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
 
                 // Function to handle checkbox change event
                 function handleCheckboxChange(event) {
@@ -3116,6 +3117,7 @@
                 document.getElementById("radioBoxContainer").style.visibility = "visible";
 
             }
+
             var pc1Values = [];
             var pc2Values = [];
             var groupValues = [];
@@ -3135,6 +3137,7 @@
 
             // downloadDataAsTxt(data_copy_pval, 'filtered_data.txt');
 
+            dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy1, dataN_copy1, [selectedRowName])
 
             var req = ocpu.call("pca", {
                 data: data_copy_pval,
@@ -6640,6 +6643,12 @@
                 only_miRNAs = false
             }
 
+            document.getElementById("upregulatedtabletitle").innerText =
+                only_miRNAs ? "Up-regulated miRNAs" : "Up-regulated Genes";
+
+            document.getElementById("downregulatedtabletitle").innerText =
+                only_miRNAs ? "Down-regulated miRNAs" : "Down-regulated Genes";
+
             console.log(miRNAs)
 
             document.getElementById("nav").style.display = "flex"
@@ -6883,6 +6892,11 @@
                                     }
                                 });
 
+                                const selectedGeneDataSet = new Set(selectedGeneData);
+
+                                selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
+
+
 
                                 // // Find the select element
                                 // var selectElement = document.getElementById("selectButton");
@@ -6934,9 +6948,41 @@
                                         miRNA_target();         // Call the next function
                                         updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
                                         if (only_miRNAs === false) {
-                                            toggleView()
+                                            toggleView(data_copy, dataC_copy, dataN_copy)
                                             document.getElementById("buttonSwitchContainer").style.display = "none"
                                         }
+                                        console.log(dataN_copy.length)
+                                        var pc1Values = [];
+                                        var pc2Values = [];
+                                        var groupValues = [];
+                                        if (data_copy_pval === undefined) {
+                                            alert("No deg found!")
+                                        }
+                                        console.log(data_copy_pval)
+                                        console.log(dataC_copy_pval)
+                                        console.log(dataN_copy_pval)
+                                        const geneNames = data_copy_pval.map(entry => entry.gene);
+                                        const uniqueGeneNames = new Set(geneNames);
+
+                                        if (geneNames.length !== uniqueGeneNames.size) {
+                                            console.error("Duplicate gene names detected in the input data.");
+                                        }
+                                        console.log(data_copy_pval)
+
+                                        // downloadDataAsTxt(data_copy_pval, 'filtered_data.txt');
+
+                                        var pca_string = "pca"
+                                        if (!example) {
+                                            pca_string = "pca?no_cache=1"
+                                        }
+
+                                        if (only_miRNAs === false) {
+                                            toggleView(data_copy, dataC_copy, dataN_copy)
+                                            document.getElementById("buttonSwitchContainer").style.display = "none"
+                                        }
+
+                                        document.getElementById("loadingOverlay").style.display = "none"
+
 
                                     } catch (error) {
                                         console.error("Error during visualizations:", error);
@@ -6963,180 +7009,8 @@
                                 updateCounter();
                                 updateUpandDown();
 
-                                // Function to handle checkbox change event
-                                // function handleCheckboxChange(event) {
-                                //     var isChecked = event.target.checked;
-                                //     var category = event.target.value;
-
-                                //     if (isChecked) {
-                                //         // Add category to first_dims array
-                                //         first_dims.unshift(category);
-                                //     } else {
-                                //         // Remove category from first_dims array
-                                //         var index = first_dims.indexOf(category);
-                                //         if (index !== -1) {
-                                //             first_dims.splice(index, 1);
-                                //         }
-                                //     }
-
-                                //     // Log the updated first_dims array
-                                //     console.log("Updated first_dims:", first_dims);
-
-                                //     // dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
-                                // }
-
-
-                                // var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-
-                                // // Get the container element
-                                // var checkboxContainer = document.getElementById("checkboxContainer");
-
-                                // // Initialize a variable to count the number of checkboxes added to the current row
-                                // var checkboxesInRow = 0;
-
-                                // // Iterate through metadataCategories to create checkboxes
-                                // metadataCategories.forEach(function (category) {
-                                //     // Create a checkbox element
-                                //     var checkbox = document.createElement("input");
-                                //     checkbox.type = "checkbox";
-                                //     checkbox.value = category;
-                                //     checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
-
-                                //     // Set the checked attribute based on condition
-                                //     if (category === selectedRowName) {
-                                //         checkbox.checked = true;
-                                //     }
-
-                                //     // Create a label for the checkbox
-                                //     var label = document.createElement("label");
-                                //     label.htmlFor = checkbox.id;
-                                //     label.appendChild(document.createTextNode(category));
-
-                                //     // Add event listener to the checkbox to handle change event
-                                //     checkbox.addEventListener("change", handleCheckboxChange);
-
-                                //     // Append the checkbox and label to the container element
-                                //     checkboxContainer.appendChild(checkbox);
-                                //     checkboxContainer.appendChild(label);
-
-                                //     // Increment the count of checkboxes in the row
-                                //     checkboxesInRow++;
-
-                                //     // Add a line break after every two checkboxes
-                                //     if (checkboxesInRow % 2 === 0) {
-                                //         checkboxContainer.appendChild(document.createElement("br"));
-                                //     }
-                                // });
-
-                                // // Initialize a variable to count the number of radio buttons added to the current row
-                                // var radioButtonsInRow = 0;
-                                // // Get the container element
-                                // var radioBoxContainer = document.getElementById("radioBoxContainer");
-
-                                // // Function to handle radio button change event
-                                // function handleRadioButtonChange(event) {
-                                //     // Update selectedVariable with the value of the selected radio button
-                                //     selectedVariable = event.target.value;
-
-                                //     // dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
-                                // }
-
-
-                                // // Iterate through metadataCategories to create radio buttons
-                                // // Count the unique values in the metadata category
-                                // function countUniqueValues(cat, j) {
-                                //     var uniqueValues = new Set(); // Use a Set to store unique values
-                                //     // Iterate through metadata categories to create y scales
-                                //     metadataCategories.forEach((category, i) => {
-                                //         if (j === i) {
-                                //             var values = Object.values(metadata[i]); // Extract values for the current category
-                                //             values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                //             var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                //             console.log("Values for", category, ":", uniqueValues);
-                                //             return uniqueValues.length; // Return the size of the Set, which is the count of unique values
-                                //         }
-                                //     });
-                                // }
-
-                                // // Iterate through metadataCategories to create radio buttons
-                                // metadataCategories.forEach(function (category, i) {
-                                //     // Check if the category has more than 9 unique values
-                                //     var values = Object.values(metadata[i]); // Extract values for the current category
-                                //     values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                //     var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                //     console.log("Values for", category, ":", uniqueValues);
-                                //     console.log(uniqueValues.length);
-                                //     if (uniqueValues.length >= 9) return
-
-                                //     // Create a radio button element
-                                //     var radioButton = document.createElement("input");
-                                //     radioButton.type = "radio";
-                                //     radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
-                                //     radioButton.value = category;
-                                //     radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
-
-                                //     // Set the checked attribute based on condition
-                                //     if (category === selectedRowName) {
-                                //         radioButton.checked = true;
-                                //     }
-
-                                //     // Create a label for the radio button
-                                //     var label = document.createElement("label");
-                                //     label.htmlFor = radioButton.id;
-                                //     label.appendChild(document.createTextNode(category));
-
-                                //     // Add event listener to the radio button to handle change event
-                                //     radioButton.addEventListener("change", handleRadioButtonChange);
-
-                                //     // Append the radio button and label to the container element
-                                //     radioBoxContainer.appendChild(radioButton);
-                                //     radioBoxContainer.appendChild(label);
-
-                                //     // Increment the count of radio buttons in the row
-                                //     radioButtonsInRow++;
-
-                                //     // Add a line break after every two radio buttons
-                                //     if (radioButtonsInRow % 2 === 0) {
-                                //         radioBoxContainer.appendChild(document.createElement("br"));
-                                //     }
-                                // });
-
-                                // document.getElementById("checkboxContainer").style.visibility = "visible";
-                                // document.getElementById("radioBoxContainer").style.visibility = "visible";
 
                             }
-                            console.log(dataN_copy.length)
-                            var pc1Values = [];
-                            var pc2Values = [];
-                            var groupValues = [];
-                            if (data_copy_pval === undefined) {
-                                alert("No deg found!")
-                            }
-                            console.log(data_copy_pval)
-                            console.log(dataC_copy_pval)
-                            console.log(dataN_copy_pval)
-                            const geneNames = data_copy_pval.map(entry => entry.gene);
-                            const uniqueGeneNames = new Set(geneNames);
-
-                            if (geneNames.length !== uniqueGeneNames.size) {
-                                console.error("Duplicate gene names detected in the input data.");
-                            }
-                            console.log(data_copy_pval)
-
-                            // downloadDataAsTxt(data_copy_pval, 'filtered_data.txt');
-
-                            var pca_string = "pca"
-                            if (!example) {
-                                pca_string = "pca?no_cache=1"
-                            }
-
-                            if (only_miRNAs === false) {
-                                toggleView()
-                                document.getElementById("buttonSwitchContainer").style.display = "none"
-                            }
-
-                            document.getElementById("loadingOverlay").style.display = "none"
-
                         });
 
 
@@ -7406,6 +7280,10 @@
                                                             selectedGeneData.push(gene.Gene);
                                                         }
                                                     });
+                                                    const selectedGeneDataSet = new Set(selectedGeneData);
+
+selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
+
 
                                                     // Find the select element
                                                     // var selectElement = document.getElementById("selectButton");
@@ -7452,7 +7330,20 @@
                                                             miRNA_target();         // Call the next function
                                                             updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj); // Call the next plot update
                                                             updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+                                                            console.log(dataN_copy.length)
+                                                            var pc1Values = [];
+                                                            var pc2Values = [];
+                                                            var groupValues = [];
+                                                            console.log(data_copy_pval)
+                                                            var pca_string = "pca"
+                                                            if (!example) {
+                                                                pca_string = "pca?no_cache=1"
+                                                            }
 
+                                                            if (only_miRNAs === false) {
+                                                                toggleView(data_copy, dataC_copy, dataN_copy)
+                                                                document.getElementById("buttonSwitchContainer").style.display = "none"
+                                                            }
                                                         } catch (error) {
                                                             console.error("Error during visualizations:", error);
                                                         }
@@ -7468,162 +7359,7 @@
                                                     updateUpandDown();
 
 
-                                                    // Function to handle checkbox change event
-                                                    // function handleCheckboxChange(event) {
-                                                    //     var isChecked = event.target.checked;
-                                                    //     var category = event.target.value;
 
-                                                    //     if (isChecked) {
-                                                    //         // Add category to first_dims array
-                                                    //         first_dims.unshift(category);
-                                                    //     } else {
-                                                    //         // Remove category from first_dims array
-                                                    //         var index = first_dims.indexOf(category);
-                                                    //         if (index !== -1) {
-                                                    //             first_dims.splice(index, 1);
-                                                    //         }
-                                                    //     }
-
-                                                    //     // Log the updated first_dims array
-                                                    //     console.log("Updated first_dims:", first_dims);
-
-                                                    //     // dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
-                                                    // }
-
-
-                                                    // var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-
-                                                    // // Get the container element
-                                                    // var checkboxContainer = document.getElementById("checkboxContainer");
-
-                                                    // // Initialize a variable to count the number of checkboxes added to the current row
-                                                    // var checkboxesInRow = 0;
-
-                                                    // // Iterate through metadataCategories to create checkboxes
-                                                    // metadataCategories.forEach(function (category) {
-                                                    //     // Create a checkbox element
-                                                    //     var checkbox = document.createElement("input");
-                                                    //     checkbox.type = "checkbox";
-                                                    //     checkbox.value = category;
-                                                    //     checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
-
-                                                    //     // Set the checked attribute based on condition
-                                                    //     if (category === selectedRowName) {
-                                                    //         checkbox.checked = true;
-                                                    //     }
-
-                                                    //     // Create a label for the checkbox
-                                                    //     var label = document.createElement("label");
-                                                    //     label.htmlFor = checkbox.id;
-                                                    //     label.appendChild(document.createTextNode(category));
-
-                                                    //     // Add event listener to the checkbox to handle change event
-                                                    //     checkbox.addEventListener("change", handleCheckboxChange);
-
-                                                    //     // Append the checkbox and label to the container element
-                                                    //     checkboxContainer.appendChild(checkbox);
-                                                    //     checkboxContainer.appendChild(label);
-
-                                                    //     // Increment the count of checkboxes in the row
-                                                    //     checkboxesInRow++;
-
-                                                    //     // Add a line break after every two checkboxes
-                                                    //     if (checkboxesInRow % 2 === 0) {
-                                                    //         checkboxContainer.appendChild(document.createElement("br"));
-                                                    //     }
-                                                    // });
-
-                                                    // // Initialize a variable to count the number of radio buttons added to the current row
-                                                    // var radioButtonsInRow = 0;
-                                                    // // Get the container element
-                                                    // var radioBoxContainer = document.getElementById("radioBoxContainer");
-
-                                                    // // Function to handle radio button change event
-                                                    // function handleRadioButtonChange(event) {
-                                                    //     // Update selectedVariable with the value of the selected radio button
-                                                    //     selectedVariable = event.target.value;
-
-                                                    //     // dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
-                                                    // }
-
-
-                                                    // // Iterate through metadataCategories to create radio buttons
-                                                    // // Count the unique values in the metadata category
-                                                    // function countUniqueValues(cat, j) {
-                                                    //     var uniqueValues = new Set(); // Use a Set to store unique values
-                                                    //     // Iterate through metadata categories to create y scales
-                                                    //     metadataCategories.forEach((category, i) => {
-                                                    //         if (j === i) {
-                                                    //             var values = Object.values(metadata[i]); // Extract values for the current category
-                                                    //             values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                    //             var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                    //             console.log("Values for", category, ":", uniqueValues);
-                                                    //             return uniqueValues.length; // Return the size of the Set, which is the count of unique values
-                                                    //         }
-                                                    //     });
-                                                    // }
-
-                                                    // // Iterate through metadataCategories to create radio buttons
-                                                    // metadataCategories.forEach(function (category, i) {
-                                                    //     // Check if the category has more than 9 unique values
-                                                    //     var values = Object.values(metadata[i]); // Extract values for the current category
-                                                    //     values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                    //     var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                    //     console.log("Values for", category, ":", uniqueValues);
-                                                    //     console.log(uniqueValues.length);
-                                                    //     if (uniqueValues.length >= 9) return
-
-                                                    //     // Create a radio button element
-                                                    //     var radioButton = document.createElement("input");
-                                                    //     radioButton.type = "radio";
-                                                    //     radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
-                                                    //     radioButton.value = category;
-                                                    //     radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
-
-                                                    //     // Set the checked attribute based on condition
-                                                    //     if (category === selectedRowName) {
-                                                    //         radioButton.checked = true;
-                                                    //     }
-
-                                                    //     // Create a label for the radio button
-                                                    //     var label = document.createElement("label");
-                                                    //     label.htmlFor = radioButton.id;
-                                                    //     label.appendChild(document.createTextNode(category));
-
-                                                    //     // Add event listener to the radio button to handle change event
-                                                    //     radioButton.addEventListener("change", handleRadioButtonChange);
-
-                                                    //     // Append the radio button and label to the container element
-                                                    //     radioBoxContainer.appendChild(radioButton);
-                                                    //     radioBoxContainer.appendChild(label);
-
-                                                    //     // Increment the count of radio buttons in the row
-                                                    //     radioButtonsInRow++;
-
-                                                    //     // Add a line break after every two radio buttons
-                                                    //     if (radioButtonsInRow % 2 === 0) {
-                                                    //         radioBoxContainer.appendChild(document.createElement("br"));
-                                                    //     }
-                                                    // });
-
-                                                    // document.getElementById("checkboxContainer").style.visibility = "visible";
-                                                    // document.getElementById("radioBoxContainer").style.visibility = "visible";
-
-
-                                                }
-                                                console.log(dataN_copy.length)
-                                                var pc1Values = [];
-                                                var pc2Values = [];
-                                                var groupValues = [];
-                                                console.log(data_copy_pval)
-                                                var pca_string = "pca"
-                                                if (!example) {
-                                                    pca_string = "pca?no_cache=1"
-                                                }
-
-                                                if (only_miRNAs === false) {
-                                                    toggleView()
-                                                    document.getElementById("buttonSwitchContainer").style.display = "none"
                                                 }
                                             });
 
@@ -7768,6 +7504,10 @@
                                                             selectedGeneData.push(gene.Gene);
                                                         }
                                                     });
+                                                    const selectedGeneDataSet = new Set(selectedGeneData);
+
+selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
+
 
                                                     // Find the select element
                                                     // var selectElement = document.getElementById("selectButton");
@@ -7814,6 +7554,22 @@
                                                             miRNA_target();         // Call the next function
                                                             updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj); // Call the next plot update
                                                             updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+                                                            console.log(dataN_copy.length)
+                                                            var pc1Values = [];
+                                                            var pc2Values = [];
+                                                            var groupValues = [];
+                                                            console.log("PCA DATA COPY PVAL:", data_copy_pval)
+                                                            var pca_string = "pca"
+                                                            if (!example) {
+                                                                pca_string = "pca?no_cache=1"
+                                                            }
+                                                            if (only_miRNAs === false) {
+                                                                dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+                                                                toggleView(data_copy, dataC_copy, dataN_copy)
+                                                                document.getElementById("buttonSwitchContainer").style.display = "none"
+                                                            }
+
+                                                            document.getElementById("loadingOverlay").style.display = "none"
 
                                                         } catch (error) {
                                                             console.error("Error during visualizations:", error);
@@ -7821,183 +7577,13 @@
                                                     }
                                                     // Call the function that runs the visualizations
                                                     runVisualizations();
-                                                    // dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy, dataN_copy, first_dims)
                                                     console.log(dataN_copy_pval[0])
-
-
-
-                                                    // updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
 
                                                     updateCounter();
                                                     updateUpandDown();
 
-                                                    // scatter.selectAll("circle")
-                                                    //     .filter(circleData => circleData.Gene === mostUpregulatedGeneName || circleData.Gene === mostDownregulatedGeneName)
-                                                    //     .style("fill", d => {
-                                                    //         // Check if logFC is greater than or equal to the threshold
-                                                    //         return "green";
-
-                                                    //     })
-                                                    //     .classed('pulse', true);
-
-                                                    // Function to handle checkbox change event
-                                                    // function handleCheckboxChange(event) {
-                                                    //     var isChecked = event.target.checked;
-                                                    //     var category = event.target.value;
-
-                                                    //     if (isChecked) {
-                                                    //         // Add category to first_dims array
-                                                    //         first_dims.unshift(category);
-                                                    //     } else {
-                                                    //         // Remove category from first_dims array
-                                                    //         var index = first_dims.indexOf(category);
-                                                    //         if (index !== -1) {
-                                                    //             first_dims.splice(index, 1);
-                                                    //         }
-                                                    //     }
-
-                                                    //     // Log the updated first_dims array
-                                                    //     console.log("Updated first_dims:", first_dims);
-
-                                                    //     // dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims);
-                                                    // }
-
-
-                                                    // var metadataCategories = Object.values(metadata).map(row => row[Object.keys(row)[0]]);
-
-                                                    // // Get the container element
-                                                    // var checkboxContainer = document.getElementById("checkboxContainer");
-
-                                                    // // Initialize a variable to count the number of checkboxes added to the current row
-                                                    // var checkboxesInRow = 0;
-
-                                                    // // Iterate through metadataCategories to create checkboxes
-                                                    // metadataCategories.forEach(function (category) {
-                                                    //     // Create a checkbox element
-                                                    //     var checkbox = document.createElement("input");
-                                                    //     checkbox.type = "checkbox";
-                                                    //     checkbox.value = category;
-                                                    //     checkbox.id = "checkbox_" + category; // Set a unique ID for each checkbox
-
-                                                    //     // Set the checked attribute based on condition
-                                                    //     if (category === selectedRowName) {
-                                                    //         checkbox.checked = true;
-                                                    //     }
-
-                                                    //     // Create a label for the checkbox
-                                                    //     var label = document.createElement("label");
-                                                    //     label.htmlFor = checkbox.id;
-                                                    //     label.appendChild(document.createTextNode(category));
-
-                                                    //     // Add event listener to the checkbox to handle change event
-                                                    //     checkbox.addEventListener("change", handleCheckboxChange);
-
-                                                    //     // Append the checkbox and label to the container element
-                                                    //     checkboxContainer.appendChild(checkbox);
-                                                    //     checkboxContainer.appendChild(label);
-
-                                                    //     // Increment the count of checkboxes in the row
-                                                    //     checkboxesInRow++;
-
-                                                    //     // Add a line break after every two checkboxes
-                                                    //     if (checkboxesInRow % 2 === 0) {
-                                                    //         checkboxContainer.appendChild(document.createElement("br"));
-                                                    //     }
-                                                    // });
-
-                                                    // // Initialize a variable to count the number of radio buttons added to the current row
-                                                    // var radioButtonsInRow = 0;
-                                                    // // Get the container element
-                                                    // var radioBoxContainer = document.getElementById("radioBoxContainer");
-
-                                                    // // Function to handle radio button change event
-                                                    // function handleRadioButtonChange(event) {
-                                                    //     // Update selectedVariable with the value of the selected radio button
-                                                    //     selectedVariable = event.target.value;
-
-                                                    //     // dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims, ordering);
-                                                    // }
-
-
-                                                    // // Iterate through metadataCategories to create radio buttons
-                                                    // // Count the unique values in the metadata category
-                                                    // function countUniqueValues(cat, j) {
-                                                    //     var uniqueValues = new Set(); // Use a Set to store unique values
-                                                    //     // Iterate through metadata categories to create y scales
-                                                    //     metadataCategories.forEach((category, i) => {
-                                                    //         if (j === i) {
-                                                    //             var values = Object.values(metadata[i]); // Extract values for the current category
-                                                    //             values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                    //             var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                    //             console.log("Values for", category, ":", uniqueValues);
-                                                    //             return uniqueValues.length; // Return the size of the Set, which is the count of unique values
-                                                    //         }
-                                                    //     });
-                                                    // }
-
-                                                    // // Iterate through metadataCategories to create radio buttons
-                                                    // metadataCategories.forEach(function (category, i) {
-                                                    //     // Check if the category has more than 9 unique values
-                                                    //     var values = Object.values(metadata[i]); // Extract values for the current category
-                                                    //     values.shift(); // Remove the first value (Sample_source_name_ch1)
-                                                    //     var uniqueValues = [...new Set(values)]; // Filter out duplicate
-                                                    //     console.log("Values for", category, ":", uniqueValues);
-                                                    //     console.log(uniqueValues.length);
-                                                    //     if (uniqueValues.length >= 9) return
-
-                                                    //     // Create a radio button element
-                                                    //     var radioButton = document.createElement("input");
-                                                    //     radioButton.type = "radio";
-                                                    //     radioButton.name = "radioButtonGroup"; // Set the same name for all radio buttons in the group
-                                                    //     radioButton.value = category;
-                                                    //     radioButton.id = "radioButton_" + category; // Set a unique ID for each radio button
-
-                                                    //     // Set the checked attribute based on condition
-                                                    //     if (category === selectedRowName) {
-                                                    //         radioButton.checked = true;
-                                                    //     }
-
-                                                    //     // Create a label for the radio button
-                                                    //     var label = document.createElement("label");
-                                                    //     label.htmlFor = radioButton.id;
-                                                    //     label.appendChild(document.createTextNode(category));
-
-                                                    //     // Add event listener to the radio button to handle change event
-                                                    //     radioButton.addEventListener("change", handleRadioButtonChange);
-
-                                                    //     // Append the radio button and label to the container element
-                                                    //     radioBoxContainer.appendChild(radioButton);
-                                                    //     radioBoxContainer.appendChild(label);
-
-                                                    //     // Increment the count of radio buttons in the row
-                                                    //     radioButtonsInRow++;
-
-                                                    //     // Add a line break after every two radio buttons
-                                                    //     if (radioButtonsInRow % 2 === 0) {
-                                                    //         radioBoxContainer.appendChild(document.createElement("br"));
-                                                    //     }
-                                                    // });
-
-                                                    // document.getElementById("checkboxContainer").style.visibility = "visible";
-                                                    // document.getElementById("radioBoxContainer").style.visibility = "visible";
-
 
                                                 }
-                                                console.log(dataN_copy.length)
-                                                var pc1Values = [];
-                                                var pc2Values = [];
-                                                var groupValues = [];
-                                                console.log("PCA DATA COPY PVAL:", data_copy_pval)
-                                                var pca_string = "pca"
-                                                if (!example) {
-                                                    pca_string = "pca?no_cache=1"
-                                                }
-                                                if (only_miRNAs === false) {
-                                                    toggleView()
-                                                    document.getElementById("buttonSwitchContainer").style.display = "none"
-                                                }
-
-                                                document.getElementById("loadingOverlay").style.display = "none"
                                                 // DEG(data_copy_pval,parsedLogFC,old_p_adj)
                                                 // var req = ocpu.call("enrichment", {
                                                 //     data: data_copy
@@ -8197,7 +7783,7 @@
                         },
                         orderDataType: 'dom-highlighted' // Assign custom sorting type
                     },
-                    { title: "miRNA", data: "Gene" },
+                    { title: only_miRNAs ? "miRNA" : "Gene", data: "Gene" },
                     { title: "AdjPVal", data: "AdjPVal" },
                     { title: "LogFC", data: "LogFC" }
                 ],
@@ -8440,7 +8026,7 @@
                         },
                         orderDataType: 'dom-highlighted' // Assign custom sorting type
                     },
-                    { title: "miRNA", data: "Gene" },
+                    { title: only_miRNAs ? "miRNA" : "Gene", data: "Gene" },
                     { title: "AdjPVal", data: "AdjPVal" },
                     { title: "LogFC", data: "LogFC" }
                 ],
@@ -8792,6 +8378,10 @@
                                         selectedGeneData.push(gene.Gene);
                                     }
                                 });
+                                const selectedGeneDataSet = new Set(selectedGeneData);
+
+                                selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
+
 
                             }
                             else {
@@ -8964,6 +8554,10 @@
                                         selectedGeneData.push(gene.Gene);
                                     }
                                 });
+                                const selectedGeneDataSet = new Set(selectedGeneData);
+
+                                selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
+
 
                             }
                             else {
@@ -10220,7 +9814,6 @@
             // Add button click listener to update the plot
             d3.select("#update-plot").on("click", updatePlot);
 
-            document.getElementById("loadingOverlay").style.display = "none";
             // applyThemeToSVG()
         }
 
@@ -22611,7 +22204,7 @@
                     .attr("alignment-baseline", "middle")
                     .style("font-size", "18px")
                     .style("fill", "#000")
-                    .text("Please, select at least one gene to show miRNAs distributions");
+                    .text("Please, select at least one gene to show miRNAs/genes distributions");
 
                 return;  // Exit the function as no plot needs to be drawn
             }
@@ -22694,14 +22287,23 @@
             }
 
 
-            // Title
-            svgRidge.append("text")
-                .attr("x", width / 2)
-                .attr("y", -(margin.top / 2) - 10)
-                .attr("text-anchor", "middle")
-                .attr("font-size", "16px")
-                .text("Ridge Plot for Selected miRNAs");
-
+            if (only_miRNAs) {
+                // Title
+                svgRidge.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", -(margin.top / 2) - 10)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "16px")
+                    .text("Ridge Plot for Selected miRNAs");
+            } else {
+                // Title
+                svgRidge.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", -(margin.top / 2) - 10)
+                    .attr("text-anchor", "middle")
+                    .attr("font-size", "16px")
+                    .text("Ridge Plot for Selected genes");
+            }
             // Kernel density estimation
             var kde = kernelDensityEstimator(kernelEpanechnikov(4), x.ticks(40));
             var allDensity = [];
@@ -22767,10 +22369,11 @@
 
                             // Show the tooltip with relevant stats (mean and median)
                             const stats = calculateStats(expressionValues); // Pass the correct expression values
+
                             tooltip.style("visibility", "visible")
                                 .style("top", (d3.event.pageY - 28) + "px")
                                 .style("left", (d3.event.pageX + 15) + "px")
-                                .html(`<strong>miRNA:</strong> ${d.key}<br>
+                                .html(`<strong>${d.key}</strong><br>
                     <strong>Mean:</strong> ${stats.mean}<br>
                     <strong>Median:</strong> ${stats.median}<br>
                     <strong>Standard deviation:</strong> ${stats.stdev}<br>
@@ -22893,6 +22496,11 @@
                 .attr("font-size", "12px")
                 .html("log<tspan dy='5'>2</tspan> <tspan dy='-5'>(Gene Expressions)</tspan>");
 
+            var stringmir = "miRNAs"
+            if (!only_miRNAs) {
+                stringmir = "genes"
+            }
+
             if (yUp) {
                 // Group for "UpRegulated miRNAs"
                 const upLegendGroup = svgRidge.append("g")
@@ -22904,7 +22512,7 @@
                     .attr("y", 5)
                     .attr("text-anchor", "start") // Align text to start near the circle
                     .attr("font-size", "12px")
-                    .text("UpRegulated miRNAs");
+                    .text("UpRegulated " + stringmir);
 
                 // Add the circle
                 upLegendGroup.append("circle")
@@ -22925,7 +22533,7 @@
                         .attr("y", 5)
                         .attr("text-anchor", "start") // Align text to start near the circle
                         .attr("font-size", "12px")
-                        .text("DownRegulated miRNAs");
+                        .text("DownRegulated " + stringmir);
 
                     // Add the circle
                     downLegendGroup.append("circle")
@@ -22946,7 +22554,7 @@
                     .attr("y", 5)
                     .attr("text-anchor", "start") // Align text to start near the circle
                     .attr("font-size", "12px")
-                    .text("DownRegulated miRNAs");
+                    .text("DownRegulated " + stringmir);
 
                 // Add the circle
                 downLegendGroup.append("circle")
@@ -24498,7 +24106,6 @@
 
         function heatmap(heatmap_data) {
             console.log(heatmap_data)
-            document.getElementById("loadingOverlay").style.display = "none";
 
             var heatmap_data_subset = heatmap_data.slice(0, displayed_rows);
             console.log(heatmap_data_subset)
@@ -25033,12 +24640,12 @@
             // Remove the domain path
             axis.select(".domain").remove();
 
-            document.getElementById("loadingOverlay").style.display = "none";
             // applyThemeToSVG()
 
         }
 
         function dendo_heatmap() {
+            document.getElementById("loadingOverlay").style.display = "block";
             return new Promise((resolve, reject) => {
 
                 var req = ocpu.call("heatmap_mod?no_cache=1", {
@@ -25060,7 +24667,6 @@
                         .then(response => {
                             // Check if the response is ok (status 200-299)
                             if (!response.ok) {
-                                document.getElementById("loadingOverlay").style.display = "none";
                                 reject(new Error(`Error fetching data: ${response.status} ${response.statusText}`));
                                 return
                             }
@@ -25069,7 +24675,6 @@
                         .then(data => {
                             d3.select("#heatmapCon").html("")
                             console.log(session);
-                            document.getElementById("loadingOverlay").style.display = "none";
                             const parsedData = JSON.parse(data[0]);
                             var data = parsedData
 
@@ -25859,7 +25464,7 @@
 
                                         d3.selectAll(".cell.cell-border")
                                             .filter(function () {
-                                                return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                                return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell"); // Select only cells that do NOT have the 'selected' class
                                             })
                                             .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -25925,7 +25530,7 @@
                                                 if (hasSelected) {
                                                     d3.selectAll(".cell")
                                                         .filter(function () {
-                                                            return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                                            return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell"); // Select only cells that do NOT have the 'selected' class
                                                         })
                                                         .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
                                                 } else {
@@ -26039,7 +25644,7 @@
                                         if (hasSelected) {
                                             d3.selectAll(".cell")
                                                 .filter(function () {
-                                                    return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell"); // Select only cells that do NOT have the 'selected' class
                                                 })
                                                 .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
                                         } else {
@@ -26360,7 +25965,7 @@
                                 console.log(selectedGeneData)
                                 d3.selectAll(".cell")
                                     .filter(function () {
-                                        return !d3.select(this).classed("selected"); // Select only cells that do NOT have the 'selected' class
+                                        return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell"); // Select only cells that do NOT have the 'selected' class
                                     })
                                     .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
@@ -26401,6 +26006,7 @@
                                     }
                                 });
                             }
+                            document.getElementById("loadingOverlay").style.display = "none";
 
                             resolve();
 
@@ -28068,6 +27674,8 @@
 
 
         function updateCounter() {
+            var stringmiRNAgene = "miRNAs"
+            if (!only_miRNAs) stringmiRNAgene = "Genes"
             // Select the counter div
             var counterDiv = d3.select("#counter");
             var counterDiv1 = d3.select("#counter1");
@@ -28076,26 +27684,26 @@
             if (data_copy_pval.length > data_copy.length) {
                 // Update the content of the counter and apply margin-left to text
                 counterDiv.html(
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>Total number of genes:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>Total number of " + stringmiRNAgene + ":</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing IQR Filter:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing IQR Filter:</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing FC Filter:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing FC Filter:</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing FDR Filter:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing FDR Filter:</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold;margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
                 );
             }
             else {
 
                 counterDiv.html(
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>Total number of genes:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>Total number of " + stringmiRNAgene + ":</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing IQR Filter:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing IQR Filter:</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing FC Filter:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing FC Filter:</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing FDR Filter:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing FDR Filter:</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
                 );
 
@@ -28103,13 +27711,13 @@
 
             // Update the content of the counter and apply margin-left to text
             counterDiv.html(
-                "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>Total number of genes:</span>" +
+                "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>Total number of " + stringmiRNAgene + ":</span>" +
                 "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
-                "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing IQR Filter:</span>" +
+                "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing IQR Filter:</span>" +
                 "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy1.length + " (" + ((data_copy1.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing FC Filter:</span>" +
+                "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing FC Filter:</span>" +
                 "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing FDR Filter:</span>" +
+                "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing FDR Filter:</span>" +
                 "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
             );
 
@@ -28126,11 +27734,11 @@
                 );
             } else {
                 counterDiv.html(
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>Total number of genes:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>Total number of " + stringmiRNAgene + ":</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_original.length + "</span><br>" +
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing FC Filter:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing FC Filter:</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy.length + " (" + ((data_copy.length / data_original.length) * 100).toFixed(1) + "%)" + "</span><br>" +
-                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>miRNA Passing FDR Filter:</span>" +
+                    "<span style='display: inline-block; width: 50%; margin-left: 10px; font-weight: bold; font-size : 11px;'>" + stringmiRNAgene + " Passing FDR Filter:</span>" +
                     "<span style='display: inline-block; width: 50%; text-align: center; font-weight: bold; margin-left: 15px;'>" + data_copy_pval.length + " (" + ((data_copy_pval.length / data_original.length) * 100).toFixed(1) + "%)" + "</span>"
                 );
                 counterDiv1.html(
