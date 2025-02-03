@@ -69,10 +69,6 @@ Gene expression analysis is among the most important means of uncovering biologi
 
 ## Running Locally
 
-# Fix with Git LFS Installation  
-
-## Steps  
-
 1. Open your terminal.  
 2. Clone the repository to your local machine by running:  
     ```sh
