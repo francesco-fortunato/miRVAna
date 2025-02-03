@@ -19,7 +19,7 @@ miRVAna is a web-based visual analytics platform for conducting differential mic
 
 Gene expression analysis is among the most important means of uncovering biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, in particular within programming environments like R, there is significant hindrance to overcome given usually limited programming expertise among researchers. To this end, we propose herein miRVAna-a user-friendly, web-based visual analytics platform that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, limma, and DESeq2 in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be enabled to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight. Furthermore, miRVAna contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, miRVAna is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
 
-<img src="pictures/GEVIS Dashboard v1.0.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
+<img src="pictures\miRVAna UI.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
 
 ---
 
@@ -69,21 +69,36 @@ Gene expression analysis is among the most important means of uncovering biologi
 
 ## Running Locally
 
-1. Open your terminal.
-2. Clone the repository to your local machine by running:
-    ```
-    git clone https://github.com/francesco-fortunato/miRvana.git
-    ```
-3. Navigate to the "miRVAna" directory using the command line.
-    ```
-    cd miRvana
-    ```
-4.  Run the following command
-    ```
-    docker-compose up --build
-    ```
-5. Go on localhost:11765 in your web browser to access the miRVAna dashboard. Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.
+# Fix with Git LFS Installation  
 
+## Steps  
+
+1. Open your terminal.  
+2. Clone the repository to your local machine by running:  
+    ```sh
+    git clone https://github.com/francesco-fortunato/miRvana.git
+    ```  
+3. Navigate to the "miRVAna" directory using the command line:  
+    ```sh
+    cd miRvana
+    ```  
+4. Install Git LFS (if not already installed):  
+    ```sh
+    git lfs install
+    ```  
+5. Pull large files managed by Git LFS:  
+    ```sh
+    git lfs pull
+    ```  
+6. Build and run the application using Docker Compose:  
+    ```sh
+    docker-compose pull
+    docker-compose up --build
+    ```  
+7. Open your web browser and go to [localhost:11765](http://localhost:11765) to access the miRVAna dashboard.  
+   Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.  
+
+P.S. Example one and two are so big for heatmap, use example three for a smooth experience. Enjoy :)
 ---
 
 ## Usage
