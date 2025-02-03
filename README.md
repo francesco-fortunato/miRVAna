@@ -76,7 +76,7 @@ Gene expression analysis is among the most important means of uncovering biologi
 1. Open your terminal.  
 2. Clone the repository to your local machine by running:  
     ```sh
-    git clone https://github.com/francesco-fortunato/miRvana.git
+    git clone https://github.com/francesco-fortunato/miRVAna.git
     ```  
 3. Navigate to the "miRVAna" directory using the command line:  
     ```sh
