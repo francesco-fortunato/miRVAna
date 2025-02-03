@@ -76,7 +76,7 @@ Gene expression analysis is among the most important means of uncovering biologi
     ```  
 3. Navigate to the "miRVAna" directory using the command line:  
     ```sh
-    cd miRvana
+    cd miRVAna
     ```  
 4. Install Git LFS (if not already installed):  
     ```sh
