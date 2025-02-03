@@ -35,8 +35,7 @@
 
     <style>
         body {
-            background-color: #121212;
-            color: #FFFFFF;
+            background-color: var(--body-background-color);
             font-family: 'Roboto', sans-serif;
             margin: 0;
             padding: 0;
@@ -56,9 +55,16 @@
         }
 
         h4 {
-            color: #FFFFFF;
+            color: var(--text-color);
             font-size: 24px;
             margin-bottom: 10px;
+        }
+
+        :root {
+            --text-color: black;
+            --background-color: white;
+            --axis-line-color: black;
+            --body-background-color: #F1F1F1;
         }
 
         .flex1 {
@@ -70,7 +76,7 @@
 
         /* Adjust the width ratios */
         .dataTable-container {
-            background-color: #1E1E1E;
+            background-color: var(--body-background-color);
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
@@ -90,7 +96,7 @@
 
         /* Adjust the width ratios */
         .dataTable-container {
-            background-color: #1E1E1E;
+            background-color: var(--background-color);
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
@@ -103,7 +109,7 @@
 
         .dotplot-container {
             position: relative;
-            background-color: #1E1E1E;
+            background-color: var(--background-color);
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
@@ -135,7 +141,7 @@
 
         table.dataTable {
             width: 100% !important;
-            background-color: #2C2C2C;
+            /* background-color: #2C2C2C; */
             border-radius: 8px;
             border-collapse: separate;
             border-spacing: 0;
@@ -143,19 +149,19 @@
 
         table.dataTable th,
         table.dataTable td {
-            color: #FFFFFF;
+            color: var(--text-color);
             padding: 12px;
             text-align: left;
         }
 
         table.dataTable thead th {
-            background-color: #FFA726;
-            color: #121212;
+            /* background-color: #FFA726; */
+            /* color: #121212; */
             font-weight: bold;
         }
 
         table.dataTable tbody tr:hover {
-            background-color: rgba(255, 138, 101, 0.2);
+            /* background-color: rgba(255, 138, 101, 0.2); */
             /* Hover color */
             cursor: pointer;
         }
@@ -164,7 +170,7 @@
         table.dataTable tbody tr.selected {
             background-color: #FF8C00 !important;
             /* Selected row color */
-            color: #FFFFFF !important;
+            color: var(--text-color) !important;
             /* Text color for selected row */
         }
 
@@ -172,7 +178,7 @@
         #geneTable tbody tr.selected>* {
             box-shadow: none !important;
             /* Remove blue box-shadow */
-            color: #FFFFFF !important;
+            color: var(--text-color) !important;
             /* Ensure white text color for all cells */
         }
 
@@ -373,7 +379,7 @@
                 <div id="survival" style="width: 800px; height: 600px; display: flex; justify-content: center; align-items: center;"></div>
                 <label for="timeUnit" style="vertical-align: middle;">
                     <span
-                        style="margin: 0; padding: 0; color: #ddd; margin-left:30px; margin-top: 28px; display: inline-block; line-height: 2.2rem;">Select
+                        style="margin: 0; padding: 0; color: var(--text-color); margin-left:30px; margin-top: 28px; display: inline-block; line-height: 2.2rem;">Select
                         Time Unit for x axis:</span>
                 </label>
                 <select id="timeUnit" class="btn btn-secondary dropdown-toggle"
@@ -388,7 +394,7 @@
 
     <script>
         try {
-            ocpu.seturl("http://localhost:11765/ocpu/lib/GEVIS/R");
+            ocpu.seturl("http://localhost:8004/ocpu/lib/GEVIS/R");
         } catch (error) {
             // If an error occurs (e.g., ocpu is not defined), reload the page
             window.location.reload();
@@ -706,9 +712,9 @@
 
             // Style the x-axis lines and ticks AFTER merging
             xAxisUpdate.selectAll("line, path") // Select lines and paths within xAxis
-                .style("stroke", "white");
+                .style("stroke", "var(--text-color)");
             xAxisUpdate.selectAll("text") // Select text within xAxis
-                .style("fill", "white");
+                .style("fill", "var(--text-color)");
 
             // Create or update the y-axis
             const yAxis = svg.selectAll(".yAxis")
@@ -724,9 +730,9 @@
 
             // Style the y-axis lines and ticks AFTER merging
             yAxisUpdate.selectAll("line, path") // Select lines and paths within yAxis
-                .style("stroke", "white");
+                .style("stroke", "var(--text-color)");
             yAxisUpdate.selectAll("text") // Select text within yAxis
-                .style("fill", "white");
+                .style("fill", "var(--text-color)");
 
             // Create or update the x-axis title
             const xAxisTitle = svg.selectAll(".xAxisTitle")
@@ -739,7 +745,7 @@
                 .attr("y", height + margin.bottom - 10)
                 .attr("text-anchor", "middle")
                 .style("font-size", "14px")
-                .style("fill", "white") // Set fill to white
+                .style("fill", "var(--text-color)") // Set fill to white
                 .text("Time (in Days)");
 
             // Merge the enter selection for x-axis title
@@ -757,7 +763,7 @@
                 .attr("y", -margin.left + 12)
                 .attr("text-anchor", "middle")
                 .style("font-size", "14px")
-                .style("fill", "white") // Set fill to white
+                .style("fill", "var(--text-color)") // Set fill to white
                 .text("Survival Probability");
 
             // Merge the enter selection for y-axis title
@@ -795,9 +801,9 @@
 
                 // Style the x-axis lines and ticks AFTER merging
                 xAxisUpdate.selectAll("line, path") // Select lines and paths within xAxis
-                    .style("stroke", "white");
+                    .style("stroke", "var(--text-color)");
                 xAxisUpdate.selectAll("text") // Select text within xAxis
-                    .style("fill", "white");
+                    .style("fill", "var(--text-color)");
 
                 // Update x-axis label with capitalized unit
                 const capitalizedUnit = unit.charAt(0).toUpperCase() + unit.slice(1);
@@ -825,7 +831,7 @@
                 legend.append("text")
                     .attr("x", 15)
                     .attr("y", 8)
-                    .style("fill", "white")
+                    .style("fill", "var(--text-color)")
                     .text("High Expression");
 
                 // Append low expression rectangle and text
@@ -834,19 +840,19 @@
                     .attr("y", 20)
                     .attr("width", 10)
                     .attr("height", 10)
-                    .attr("fill", "#00BFC4");
+                    .attr("fill", "var(--text-color)");
 
                 legend.append("text")
                     .attr("x", 15)
                     .attr("y", 28)
-                    .style("fill", "white")
+                    .style("fill", "var(--text-color)")
                     .text("Low Expression");
 
                 // Append p-value text
                 legend.append("text")
                     .attr("x", 15)
                     .attr("y", 48)
-                    .style("fill", "white")
+                    .style("fill", "var(--text-color)")
                     .text("p-value: " + pvalue);
             } else {
                 // Legend exists, update it
@@ -868,7 +874,7 @@
                     .attr("text-anchor", "middle")
                     .style("font-size", "18px")
                     .text("Survival plot for " + name.split('|')[0] + " (median: " + parseFloat(median).toFixed(2) + ")")
-                    .style("fill", "white");
+                    .style("fill", "var(--text-color)");
             }
 
             // Create the line generator
@@ -900,7 +906,7 @@
                 .append("path")
                 .attr("class", "lowLine")
                 .attr("fill", "none")
-                .attr("stroke", "#00BFC4")
+                .attr("stroke", "var(--text-color)")
                 .attr("stroke-width", 2)
                 .merge(lowLine) // Merge enter and update selections
                 .transition()
@@ -941,7 +947,7 @@
                     .attr("class", "crosshair-circle")
                     .attr("r", 4)
                     .attr("stroke", "gray")
-                    .attr("fill", "white");
+                    .attr("fill", "var(--text-color)");
             }
 
             // Check if the tooltip already exists
@@ -1044,9 +1050,9 @@
 
                 // Style the x-axis lines and ticks AFTER merging
                 xAxisUpdate.selectAll("line, path") // Select lines and paths within xAxis
-                    .style("stroke", "white");
+                    .style("stroke", "var(--text-color)");
                 xAxisUpdate.selectAll("text") // Select text within xAxis
-                    .style("fill", "white");
+                    .style("fill", "var(--text-color)");
 
                 // Update x-axis label with capitalized unit
                 const capitalizedUni = selectedUnit.charAt(0).toUpperCase() + selectedUnit.slice(1);
