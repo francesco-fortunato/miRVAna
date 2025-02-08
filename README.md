@@ -1,6 +1,6 @@
 # miRVAna - miRNA Visual ANalytics
 
-miRVAna is a web-based visual analytics platform for conducting differential microRNA expression analysis, designed to facilitate interactive visualization and in-depth exploration of miRNA expression data and miRNA-mRNA interaction. The system supports multiple analysis methods and visualization techniques, providing researchers with a versatile platform for understanding gene expression patterns and identifying key biomarkers across biological conditions.
+miRVAna is a web-based visual analytics platform for conducting differential gene expression analysis, designed to facilitate interactive visualization and in-depth exploration of gene expression data and miRNA-mRNA interaction. The system supports multiple analysis methods and visualization techniques, providing researchers with a versatile platform for understanding gene expression patterns and identifying key biomarkers across biological conditions.
 
 # Table of Contents
 
@@ -17,7 +17,7 @@ miRVAna is a web-based visual analytics platform for conducting differential mic
 
 ## Introduction 
 
-Gene expression analysis is among the most important means of uncovering biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, in particular within programming environments like R, there is significant hindrance to overcome given usually limited programming expertise among researchers. To this end, we propose herein miRVAna-a user-friendly, web-based visual analytics platform that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, limma, and DESeq2 in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be enabled to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight. Furthermore, miRVAna contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, miRVAna is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
+Gene expression analysis is among the most important means of uncovering biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, particularly within programming environments like R, there is a significant hindrance to overcome given usually limited programming expertise among researchers. To this end, we propose herein miRVAna-a user-friendly, web-based visual analytics platform that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, limma, and DESeq2 in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be enabled to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight. Furthermore, miRVAna contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, miRVAna is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
 
 <img src="pictures\miRVAna UI.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
 
@@ -28,7 +28,7 @@ Gene expression analysis is among the most important means of uncovering biologi
 - **Scatterplot and Volcano Plot Visualization:** 
   - Easily switch between scatterplot (comparing case expression vs. normal expression) and volcano plot for intuitive visual exploration of differentially expressed genes.
   - Scatterplot circles represent genes, color-coded based on log fold change (LogFC). Clicking a gene highlights it and adds its axis to the scatterplot.
-  - Volcano plot visualizes gene significance with respect to LogFC and p-value, helping identify the most significant genes at a glance.
+  - Volcano plot visualizes gene significance concerning LogFC and p-value, helping identify the most significant genes at a glance.
 
 - **Custom Dataset Input:** 
   - Users can input raw gene expression data along with metadata, offering flexibility in the types of data analyzed. This feature allows for the integration of user-specific datasets for personalized exploration.
@@ -94,7 +94,7 @@ Gene expression analysis is among the most important means of uncovering biologi
 7. Open your web browser and go to [localhost:11765](http://localhost:11765) to access the miRVAna dashboard.  
    Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.  
 
-P.S. Example one and two are so big for heatmap, use example three for a smooth experience. Enjoy :)
+P.S. Examples one and two are so big for the heatmap, use example three for a smooth experience. Enjoy :)
 ---
 
 ## Usage
