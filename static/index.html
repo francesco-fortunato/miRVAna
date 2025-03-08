@@ -4903,6 +4903,39 @@
             var headersData1 = [];
             var headersData2 = [];
 
+            // Identify sample names (excluding the first column, which might be "Gene" or "Sample ID")
+            let headers1 = Object.keys(data1[0]).slice(1); // Exclude first column
+            let headers2 = Object.keys(data2[0]).slice(1);
+
+            // Find common sample names
+            let commonSamples = headers1.filter(sample => headers2.includes(sample));
+
+            if (commonSamples.length === 0) {
+                alert("No common samples found between the two datasets.");
+                return;
+            }
+
+            // Ensure the first column is retained (e.g., "Gene" or "Sample ID")
+            let firstColumn1 = Object.keys(data1[0])[0];
+            let firstColumn2 = Object.keys(data2[0])[0];
+
+            // Filter data1 and data2 to include only common samples + first column
+            let filteredData1 = data1.map(row => {
+                let filteredRow = { [firstColumn1]: row[firstColumn1] }; 
+                commonSamples.forEach(sample => filteredRow[sample] = row[sample]);
+                return filteredRow;
+            });
+
+            let filteredData2 = data2.map(row => {
+                let filteredRow = { [firstColumn2]: row[firstColumn2] }; 
+                commonSamples.forEach(sample => filteredRow[sample] = row[sample]);
+                return filteredRow;
+            });
+
+            data1 = filteredData1
+
+            data2 = filteredData2
+
             if (data1) {
                 headersData1 = Object.keys(data1[0]).slice(0, 5);
                 document.getElementById("totalColumns1").textContent = Object.keys(data1[0]).length;
@@ -5004,9 +5037,9 @@
             // $('#csvTableData1_wrapper').css('margin-right', '40px');
 
             // Compare the headers excluding the first element
-            var headers1ToCompare = Object.keys(data1[0]).slice(1);
-            var headers2ToCompare = Object.keys(data2[0]).slice(1);
-            var headersMatch = JSON.stringify(headers1ToCompare) === JSON.stringify(headers2ToCompare);
+            // var headers1ToCompare = Object.keys(data1[0]).slice(1);
+            // var headers2ToCompare = Object.keys(data2[0]).slice(1);
+            var headersMatch = JSON.stringify(headers1) === JSON.stringify(headers2);
 
             // Create the message container and message element
             var messageContainer = document.getElementById('messageContainer');
@@ -5017,9 +5050,9 @@
                 messageElement.innerHTML = '<span style="color: #228B22; font-weight: bold;">&#10003;</span> <strong>Everything looks good!</strong> The headers match, and the files are ready for analysis.';
                 document.getElementById("selectMetadataBtn").disabled = false;
             } else {
-                messageElement.style.color = 'red';
-                messageElement.innerHTML = '<span style="color: red; font-weight: bold;">&#10008;</span> <strong>Heads up!</strong> The headers do not match. Please check the files and try again.';
-                document.getElementById("selectMetadataBtn").disabled = true;
+                messageElement.style.color = 'orange';
+                messageElement.innerHTML = `<span style="color: orange; font-weight: bold;">&#9888;</span> <strong>Notice:</strong> The original headers mismatched, but we retained ${commonSamples.length} common samples for analysis.`;
+                document.getElementById("selectMetadataBtn").disabled = false;
             }
 
             // Clear any existing message and add the new message
