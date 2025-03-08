@@ -5348,6 +5348,12 @@
                     selectRowBtn3.disabled = true;
                 }
 
+                var selectRowBtn4 = document.createElement("button");
+                selectRowBtn4.textContent = "Perform DEG with Wilcox\n(This may take a while. Don't panic if it seems stuck)";
+                selectRowBtn4.setAttribute("style", "flex: 1; padding: 10px; background-color: #008CBA; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; white-space: pre-line; ");
+                selectRowBtn4.disabled = false;
+
+
                 // Create div containers for each disabled button
                 var div1 = document.createElement("div");
                 div1.style.display = "inline-block";  // Ensure inline display for proper alignment
@@ -5363,6 +5369,12 @@
                 div3.style.display = "inline-block";
                 div3.style.pointerEvents = "auto";
                 div3.appendChild(selectRowBtn3);
+
+                // Create div containers for each disabled button
+                var div4 = document.createElement("div");
+                div4.style.display = "inline-block";  // Ensure inline display for proper alignment
+                div4.style.pointerEvents = "auto";    // Allow pointer events on the div
+                div4.appendChild(selectRowBtn4);
 
 
                 // Initialize Tippy.js for tooltips on div containers
@@ -5382,6 +5394,13 @@
 
                 var tippyInstance3 = tippy(div3, {
                     content: "DESeq2 (Differential Expression using RNA-Seq 2) is a popular tool for analyzing RNA-Seq data. It requires raw count data with integer values. If your data contains non-integer or pre-processed values, DESeq2 will be disabled.",
+                    placement: 'bottom',
+                    theme: 'light',
+                    interactive: true,  // Allow interaction with the tooltip
+                });
+
+                var tippyInstance4 = tippy(div4, {
+                    content: "The Wilcoxon test is a non-parametric test that compares two groups without assuming a normal distribution. It is particularly useful for small sample sizes or when the normality assumption is violated.",
                     placement: 'bottom',
                     theme: 'light',
                     interactive: true,  // Allow interaction with the tooltip
@@ -5590,6 +5609,8 @@
 
                     // Modify the content of the t-test tooltip
                     tippyInstance3.setContent("DESeq2 (Differential Expression using RNA-Seq 2) is a popular tool for analyzing RNA-Seq data. It requires raw count data with integer values. If your data contains non-integer or pre-processed values, DESeq2 will be disabled.");
+
+                    tippyInstance4.setContent("The Wilcoxon test is a non-parametric test that compares two groups without assuming a normal distribution. It is particularly useful for small sample sizes or when the normality assumption is violated.");
 
                     // Create the full-screen black overlay with opacity
                     var fullScreenOverlay = document.createElement("div");
@@ -6601,6 +6622,7 @@
                 buttonContainer.appendChild(div1);
                 buttonContainer.appendChild(div2);
                 buttonContainer.appendChild(div3);
+                buttonContainer.appendChild(div4);
 
                 selectMetadataContent.appendChild(selectColors);
                 selectMetadataContent.appendChild(buttonContainer);
