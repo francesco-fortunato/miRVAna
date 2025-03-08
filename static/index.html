@@ -4922,13 +4922,13 @@
 
             // Filter data1 and data2 to include only common samples + first column
             let filteredData1 = data1.map(row => {
-                let filteredRow = { [firstColumn1]: row[firstColumn1] }; 
+                let filteredRow = { [firstColumn1]: row[firstColumn1] };
                 commonSamples.forEach(sample => filteredRow[sample] = row[sample]);
                 return filteredRow;
             });
 
             let filteredData2 = data2.map(row => {
-                let filteredRow = { [firstColumn2]: row[firstColumn2] }; 
+                let filteredRow = { [firstColumn2]: row[firstColumn2] };
                 commonSamples.forEach(sample => filteredRow[sample] = row[sample]);
                 return filteredRow;
             });
@@ -5601,13 +5601,10 @@
                 }
                 selectColors.addEventListener("click", function () {
 
-                    // Modify the content of the t-test tooltip
                     tippyInstance1.setContent("The t-test is a statistical test that compares the means of two groups to identify significant differences. Make sure to select a color scheme for visualization.");
 
-                    // Modify the content of the t-test tooltip
                     tippyInstance2.setContent("Limma (Linear Models for Microarray Data) is an advanced statistical method that borrows information across genes to improve detection power in differential expression analysis.");
 
-                    // Modify the content of the t-test tooltip
                     tippyInstance3.setContent("DESeq2 (Differential Expression using RNA-Seq 2) is a popular tool for analyzing RNA-Seq data. It requires raw count data with integer values. If your data contains non-integer or pre-processed values, DESeq2 will be disabled.");
 
                     tippyInstance4.setContent("The Wilcoxon test is a non-parametric test that compares two groups without assuming a normal distribution. It is particularly useful for small sample sizes or when the normality assumption is violated.");
@@ -6619,6 +6616,274 @@
 
 
                 });
+                selectRowBtn4.addEventListener("click", async function () {
+
+                    chosen_statistic = 'wilcox'
+                    event.stopPropagation(); // Prevent event bubbling
+                    var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
+                    var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
+                    selectedRowName = rowData[0]
+                    selectedVariable = selectedRowName
+                    // console.log(selectedRowName)
+                    first_dims = [selectedRowName]
+                    var values = rowData.slice(1); // Exclude the first value (name of the row)
+
+                    console.log("Two groups of values found:\SelectedValue 1: " + selectedValue1 + "\SelectedValue 2: " + selectedValue2);
+
+                    // Hide the overlay
+                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
+                    if (selectMetadataOverlay) {
+                        selectMetadataOverlay.style.display = "none";
+                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
+                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
+                    }
+
+                    // Show the loading overlay
+                    document.getElementById("loadingOverlay").style.display = "block";
+
+                    console.log("REMOVED")
+
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
+
+                    var selectedValue = selectedValue1; // or group2[0] depending on which group represents the selected value
+                    chosen_meta1 = selectedValue1
+                    chosen_meta2 = selectedValue2
+
+
+                    // Show the loading // Assuming you have already obtained the selected row index and values from data2
+                    var dataC = [];
+                    var dataN = [];
+
+                    // Convert function to string to create the worker
+                    const workerCode = `
+                        // Function to perform data transformations
+                        function performDataTransformations(data1, data2, selectedRowIndex, selectedValue) {
+                            var dataC = [];
+                            var dataN = [];
+
+                            // console.log(data1, data2, selectedRowIndex, selectedValue)
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+
+                                // Create new objects for dataC and dataN
+                                var newObjC = { "gene": gene };
+                                var newObjN = { "gene": gene };
+
+                                // Loop through the keys in the object and add values to newObjC and newObjN accordingly
+                                for (var key in obj) {
+                                    if (key !== Object.keys(obj)[0]) {
+                                        // Check if the value in data2 matches the selected value
+                                        if (data2[selectedRowIndex][key] === selectedValue) {
+                                            newObjC[key] = obj[key]; // Add value to newObjC
+                                        } else {
+                                            newObjN[key] = obj[key]; // Add value to newObjN
+                                        }
+                                    }
+                                }
+
+                                // Push the new objects to dataC and dataN
+                                dataC.push(newObjC);
+                                dataN.push(newObjN);
+                            }
+
+                            // Create a new array to hold the reordered data
+                            var reorderedData = [];
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
+
+                                // Find the corresponding row in dataC and dataN
+                                var rowDataN = dataN.find(row => row.gene === gene);
+                                var rowDataC = dataC.find(row => row.gene === gene);
+
+                                // Construct the new object with the desired structure
+                                var reorderedObj = { "gene": gene };
+
+                                // Add GSM values from dataN to reorderedObj
+                                for (var key in rowDataN) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataN[key];
+                                    }
+                                }
+
+                                // Add GSM values from dataC to reorderedObj
+                                for (var key in rowDataC) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataC[key];
+                                    }
+                                }
+
+                                // Push the new object to the reorderedData array
+                                reorderedData.push(reorderedObj);
+                            }
+
+                            // Now, reorderedData contains the desired structure
+
+                            data1 = reorderedData
+
+                            case_number = Object.keys(dataC[0]).length - 1
+                            normal_number = Object.keys(dataN[0]).length - 1
+
+                            // console.log(case_number, normal_number)
+
+                            // console.log(Object.keys(dataC[0]).length - 1)
+                            // console.log(Object.keys(dataN[0]).length - 1)
+
+                            // Assuming you have obtained genes from data1
+                            var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
+
+
+                            // Calculate overall mean for data1
+                            var overall_mean = data1.map(obj => {
+                                var values = Object.values(obj).slice(1).map(parseFloat);
+                                return values.reduce((acc, val) => acc + val, 0) / values.length;
+                            });
+
+                            // Filter out rows with overall mean equal to 0
+                            var ind = overall_mean.reduce((acc, val, index) => {
+                                if (val === 0) {
+                                    // console.log("VALUE 0");
+                                    acc.push(index);
+                                }
+                                return acc;
+                            }, []);
+
+                            // Filter dataC, dataN, data1, and genes based on ind
+                            if (ind.length > 0) {
+                                dataN = dataN.filter((_, index) => !ind.includes(index));
+                                dataC = dataC.filter((_, index) => !ind.includes(index));
+                                data1 = data1.filter((_, index) => !ind.includes(index));
+                                genes = genes.filter((_, index) => !ind.includes(index));
+                            }
+
+                            // Logarithmic transformation for dataN, dataC, and data1
+                            dataN = dataN.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            dataC = dataC.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            data1 = data1.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            console.log("CIAO")
+
+                            // Return the processed data
+                            return {
+                                dataC: dataC,
+                                dataN: dataN,
+                                data1: data1,
+                                genes: genes, // Assuming genes are extracted from data1
+                                case_number: case_number,
+                                normal_number: normal_number
+                            };
+                        }
+
+                        // Listen for messages from the main thread
+                        self.addEventListener('message', function(e) {
+                            // Retrieve data from the message
+                            var { data1, data2, selectedRowIndex, selectedValue } = e.data;
+
+                            // Perform data transformations
+                            var result = performDataTransformations(data1, data2, selectedRowIndex, selectedValue);
+
+                            // Send the result back to the main thread
+                            postMessage(result);
+                        }, false);
+                    `;
+
+                    // Create a Blob object from the worker code string
+                    const blob = new Blob([workerCode], { type: 'application/javascript' });
+
+                    // Create a URL for the blob object
+                    const blobURL = URL.createObjectURL(blob);
+
+                    // Create a new web worker from the blob URL
+                    const worker = new Worker(blobURL);
+
+                    // Promisify the web worker
+                    function runWorker(worker, message) {
+                        return new Promise((resolve, reject) => {
+                            worker.onmessage = resolve;
+                            worker.onerror = reject;
+                            worker.postMessage(message);
+                        });
+                    }
+
+                    // Start the data transformation process in the worker
+                    runWorker(worker, {
+                        data1: data1,
+                        data2: data2,
+                        selectedRowIndex: selectedRowIndex,
+                        selectedValue: selectedValue1 // Change this to selectedValue2 if needed
+                    }).then(result => {
+                        console.log(result)
+                        // Process the returned data
+                        dataC = result.data.dataC;
+                        dataN = result.data.dataN;
+                        data1 = result.data.data1;
+                        case_number = result.data.case_number;
+                        normal_number = result.data.normal_number;
+                        genes = result.data.genes;
+                        // dataC, dataN, data1, genes, case_number, normal_number = result.data;
+
+                        // Update your UI or further process the data as needed
+                        console.log(dataC);
+                        console.log(dataN);
+                        console.log(data1);
+                        console.log(genes);
+                        console.log(case_number);
+                        console.log(normal_number);
+
+                        // Hide the loading overlay after all operations are complete
+                        document.getElementById("loadingOverlay").style.display = "none";
+
+                        // Terminate the web worker
+                        worker.terminate();
+
+                        // Start the next step
+                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic, second_time);
+
+                    }).catch(error => {
+                        console.error('Error in web worker:', error);
+
+                        // Hide the loading overlay on error
+                        document.getElementById("loadingOverlay").style.display = "none";
+
+                        // Terminate the web worker
+                        worker.terminate();
+                    });
+                });
+
                 buttonContainer.appendChild(div1);
                 buttonContainer.appendChild(div2);
                 buttonContainer.appendChild(div3);
@@ -7140,6 +7405,23 @@
                                 //parsedLogFC = parsedLogFC.filter((entry, index) => !ind.includes(index));
 
                             }
+                            else {
+                                // Remove entries corresponding to ind from dataN
+                                data_copy1 = data_original
+
+                                // Remove entries corresponding to ind from dataC
+                                dataC_copy1 = dataC_original
+
+                                // Remove entries corresponding to ind from data
+                                dataN_copy1 = dataN_original
+
+                                data_original_cpy = data_copy1
+
+                                dataC_original_cpy = dataC_copy1
+
+                                dataN_original_cpy = dataN_copy1
+
+                            }
 
                             dataN_copy = dataN_copy1
                             dataC_copy = dataC_copy1
@@ -7204,6 +7486,17 @@
                                     data_copy = data_copy1.filter((entry, index) => !ind.includes(index));
 
                                     parsedLogFC = parsedLogFC_origin.filter((entry, index) => !ind.includes(index));
+                                } else {
+                                    // Remove entries corresponding to ind from dataN
+                                    dataC_copy = dataC_copy1
+
+                                    // Remove entries corresponding to ind from dataN
+                                    dataN_copy = dataN_copy1
+
+                                    data_copy = data_copy1
+
+                                    parsedLogFC = parsedLogFC_origin
+
                                 }
 
                                 //////// DATI FILTRATI DAL PRIMO FOLD-CHANGE//////////////////
@@ -7338,7 +7631,7 @@
                                                     });
                                                     const selectedGeneDataSet = new Set(selectedGeneData);
 
-selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
+                                                    selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
 
 
                                                     // Find the select element
@@ -7562,7 +7855,7 @@ selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if n
                                                     });
                                                     const selectedGeneDataSet = new Set(selectedGeneData);
 
-selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
+                                                    selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
 
 
                                                     // Find the select element
