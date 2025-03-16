@@ -4115,125 +4115,105 @@
         });
 
 
-        document.getElementById("loadCsvBtn").addEventListener("click", function () {
-            const csvWorkerScript = `
-            self.onmessage = function (event) {
-                const contents = event.data;
-
-                function detectDelimiter(line) {
-                    // Check if the line contains a comma or a semicolon
-                    if (line.includes(',')) {
-                        return ',';
-                    } else if (line.includes(';')) {
-                        return ';';
-                    } else {
-                        // Default to comma if neither comma nor semicolon is found
-                        return ',';
-                    }
-                }
-
-                function parseCsv(contents) {
-                    var lines = contents.split('\\n');
-                    var data = [];
-
-                    // Detect the delimiter
-                    var delimiter = detectDelimiter(lines[0]);
-                    console.log("Detected delimiter:", delimiter);
-
-                    // Parse headers and apply transformations
-                    var headers = lines[0].split(delimiter).map(header => header.trim()); // Trim headers
-
-                    // Transform headers: Ensure each header starts with 'X' and replace '-' with '.'
-                    headers = headers.map(header => {
-                        // Replace '-' with '.'
-                        header = header.replace(/-/g, '.');
-                        // Add 'X' at the beginning if the header starts with a number
-                        if (/^\\d/.test(header)) {
-                            header = 'X' + header;
-                        }
-                        return header;
-                    });
-
-                    for (var i = 1; i < lines.length; i++) {
-                        var obj = {};
-                        var currentline = lines[i].split(delimiter);
-                        if (currentline.length !== headers.length) {
-                            continue; // Skip this line if the number of columns doesn't match the number of headers
-                        }
-                        for (var j = 0; j < headers.length; j++) {
-                            obj[headers[j]] = currentline[j].trim(); // Trim data values
-                            obj[headers[j]] = obj[headers[j]].replace(/\\r/g, ''); // Remove carriage return characters
-                        }
-                        data.push(obj);
-                    }
-                    return data;
-                }
-
-                const parsedData = parseCsv(contents);
-                self.postMessage(parsedData);
-            };
-        `;
-
-            // Create a blob from the worker script
-            const csvBlob = new Blob([csvWorkerScript], { type: 'application/javascript' });
-            const csvWorkerURL = URL.createObjectURL(csvBlob);
-
+        document.getElementById("loadCsvBtn").addEventListener("click", async function () {
             document.getElementById("loadingOverlay").style.display = "block";
-            var fileInput1 = document.getElementById("fileInput1");
-            var fileInput2 = document.getElementById("fileInput2");
-            var file1 = fileInput1.files[0];
-            var file2 = fileInput2.files[0];
+            const fileInput1 = document.getElementById("fileInput1");
+            const fileInput2 = document.getElementById("fileInput2");
+            const file1 = fileInput1.files[0];
+            const file2 = fileInput2.files[0];
 
-            // Check if both files are selected
             if (!file1 && !file2) {
                 alert("Please select at least one file");
                 return;
             }
 
-            const handleFile = (file) => {
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        resolve(e.target.result);
+            // Create a worker dynamically
+            const createWorker = () => {
+                const csvWorkerScript = `
+                    self.onmessage = function (event) {
+                        let buffer = event.data;
+                        let lines = buffer.split('\\n');
+                        let headers = null;
+                        let data = [];
+
+                        function detectDelimiter(line) {
+                            return line.includes(',') ? ',' : line.includes(';') ? ';' : ',';
+                        }
+
+                        for (let line of lines) {
+                            if (!headers) {
+                                let delimiter = detectDelimiter(line);
+                                headers = line.split(delimiter).map(h => h.trim().replace(/-/g, '.'));
+                                headers = headers.map(h => (/^\\d/.test(h) ? 'X' + h : h));
+                            } else {
+                                let values = line.split(',');
+                                if (values.length !== headers.length) continue;
+                                let obj = {};
+                                headers.forEach((h, i) => obj[h] = values[i].trim().replace(/\\r/g, ''));
+                                data.push(obj);
+                            }
+
+                            if (data.length >= 1000) {
+                                self.postMessage(data); // Send data in chunks
+                                data = [];
+                            }
+                        }
+
+                        if (data.length) self.postMessage(data);
+                        self.postMessage(null); // Indicate completion
                     };
-                    reader.readAsText(file);
-                });
+                `;
+
+                const blob = new Blob([csvWorkerScript], { type: 'application/javascript' });
+                return new Worker(URL.createObjectURL(blob));
             };
 
-            if (file1 && !file2) {
-                // If only the first file is selected, read and display it
-                handleFile(file1).then(contents1 => {
-                    const csvWorker = new Worker(csvWorkerURL);
-                    csvWorker.onmessage = function (e) {
-                        const data1 = e.data;
-                        hideLoadCsvOverlay();
-                        showDisplayCsvOverlay(data1);
-                    };
-                    csvWorker.postMessage(contents1);
-                });
-            } else {
-                // If both files are selected, read and display both files
-                Promise.all([handleFile(file1), handleFile(file2)]).then(([contents1, contents2]) => {
-                    const csvWorker1 = new Worker(csvWorkerURL);
-                    const csvWorker2 = new Worker(csvWorkerURL);
-                    var data1, data2;
-                    csvWorker1.onmessage = function (e) {
-                        data1 = e.data;
-                        csvWorker2.postMessage(contents2);
+            async function processFileWithWorker(file) {
+                return new Promise((resolve) => {
+                    const worker = createWorker();
+                    const reader = new FileReader();
+
+                    reader.onload = function (e) {
+                        let text = e.target.result;
+                        let result = [];
+
+                        worker.onmessage = (e) => {
+                            if (e.data === null) {
+                                resolve(result); // Resolve when processing is done
+                            } else {
+                                result = result.concat(e.data); // Append chunked data
+                            }
+                        };
+
+                        worker.postMessage(text);
                     };
 
-                    csvWorker2.onmessage = function (e) {
-                        data2 = e.data;
-                        meta_for_heatmap = data2;
-
-                        hideLoadCsvOverlay();
-                        showDisplayCsvOverlay(data1, data2);
-                    };
-
-                    csvWorker1.postMessage(contents1);
+                    reader.readAsText(file);
                 });
             }
+
+            try {
+                let data1, data2;
+                if (file1 && !file2) {
+                    data1 = await processFileWithWorker(file1);
+                    hideLoadCsvOverlay();
+                    showDisplayCsvOverlay(data1);
+                } else {
+                    // Process both files in parallel
+                    [data1, data2] = await Promise.all([
+                        processFileWithWorker(file1),
+                        processFileWithWorker(file2),
+                    ]);
+                    meta_for_heatmap = data2;
+                    hideLoadCsvOverlay();
+                    showDisplayCsvOverlay(data1, data2);
+                }
+            } catch (error) {
+                console.error("Error processing CSV:", error);
+                alert("Failed to load CSV.");
+            }
         });
+
 
 
         // Event listener for the "Load Dataset" button
@@ -4936,6 +4916,7 @@
             data1 = filteredData1
 
             data2 = filteredData2
+            meta_for_heatmap = filteredData2;
 
             if (data1) {
                 headersData1 = Object.keys(data1[0]).slice(0, 5);
