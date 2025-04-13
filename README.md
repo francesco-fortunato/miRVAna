@@ -156,9 +156,3 @@ The metadata file should be structured as follows:
 | ...                  | ...                  | ...                  | ...                  | ... |
 
 Ensure that both files are formatted correctly to conduct proper analysis within the application.
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
