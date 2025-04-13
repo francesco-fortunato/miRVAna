@@ -163,4 +163,4 @@ Ensure that both files are formatted correctly to conduct proper analysis within
 
 This software is provided under a strict proprietary license. All rights to the software, including its code and associated files, are retained by the author. Unauthorized use, reproduction, or redistribution of any part of the software is prohibited. The software is made available solely for educational or review purposes. Any commercial or derivative use requires explicit written permission from the author.
 
-For licensing inquiries, please contact: [mailto:francesco.fortunato1999@gmail.com](francesco.fortunato1999@gmail.com).
+For licensing inquiries, please contact: [francesco.fortunato1999@gmail.com](mailto:francesco.fortunato1999@gmail.com).
