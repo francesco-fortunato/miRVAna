@@ -79,6 +79,84 @@ pval <- function(data, N, M) {
 }
 
 
+wilcox <- function(data, N, M, test) {
+  library(rstatix)
+  library(dplyr)
+  library(tidyr)
+  library(R.cache)
+  library(digest)
+
+  # Cache key includes 'test'
+  key <- cacheKey("wilcox_rstatix", list(data, N, M, test))
+
+  cached_result <- loadCache(key)
+  if (!is.null(cached_result)) {
+    print("CACHE FOUND")
+    return(cached_result$data)
+  }
+
+  # Extract gene names and remove last column
+  genes <- data[, ncol(data)]
+  data <- data[, -ncol(data)]
+
+  results <- lapply(1:nrow(data), function(i) {
+    x <- data[i, ]
+    group1 <- as.numeric(x[1:N])
+    group2 <- as.numeric(x[(N+1):(N+M)])
+    gene <- genes[i]
+
+    if (length(unique(c(group1, group2))) <= 1) {
+      return(data.frame(Gene = gene, pval_adj = "1"))
+    }
+
+    df <- data.frame(
+      value = c(group1, group2),
+      group = factor(rep(c("A", "B"), times = c(N, M)))
+    )
+
+    if (test == "paired") {
+      if (N != M) {
+        warning("Paired test requires N == M. Skipping gene: ", gene)
+        return(data.frame(Gene = gene, pval_adj = "1"))
+      }
+      df$pair_id <- rep(1:N, 2)
+    }
+
+    # Apply wilcox test
+    res <- tryCatch({
+      if (test == "paired") {
+        rstatix::wilcox_test(df, value ~ group, paired = TRUE) %>%
+          adjust_pvalue(method = "fdr") %>%
+          select(p.adj) %>%
+          mutate(Gene = gene)
+      } else {
+        rstatix::wilcox_test(df, value ~ group) %>%
+          adjust_pvalue(method = "fdr") %>%
+          select(p.adj) %>%
+          mutate(Gene = gene)
+      }
+    }, error = function(e) {
+      warning("Wilcox test failed for gene ", gene, ": ", e$message)
+      return(data.frame(Gene = gene, pval_adj = "1"))
+    })
+
+    res <- res %>% rename(pval_adj = p.adj)
+    res$pval_adj <- as.character(res$pval_adj)
+
+    return(res)
+  })
+
+  # Combine results
+  result <- do.call(rbind, results)
+
+  # Save to cache
+  saveCache(list(timestamp = current_time(), data = result), key)
+
+  return(result)
+}
+
+
+
 pca <- function(data, dataC, dataN) {
   library(FactoMineR)
   library(factoextra)
@@ -777,83 +855,6 @@ heatmap_mod <- function(data, metadata, field, case, distance, method, show_cols
   print("Processed Data:")
   print(data)
 
-  # Transpose the metadata for easier access
-  metadata <- as.data.frame(t(metadata))
-
-  # Set the first row as column names
-  colnames(metadata) <- metadata[1, ]
-  metadata <- metadata[-1, , drop = FALSE]  # Remove the first row now that it's column names
-
-  # Check if the primary field is a valid column in metadata
-  if (!field %in% colnames(metadata)) {
-    stop(paste("Error: The field does not exist in metadata:", field))
-  }
-
-  # Filter metadata fields to exclude those with more than 10 unique values
-  metadata_fields <- metadata[, colnames(metadata), drop = FALSE]  # Extract as a data frame
-  unique_counts <- sapply(metadata_fields, function(col) length(unique(col)))  # Count unique values
-
-  # Keep columns with <= 10 unique values and check numeric fields
-  metadata_filtered <- metadata_fields[, unique_counts <= 10, drop = FALSE]
-
-  # Check fields with > 10 unique values for numeric types and keep them for scaling
-  numeric_metadata <- metadata_fields[, unique_counts > 10, drop = FALSE]
-
-  # Identify numeric columns
-  numeric_cols <- sapply(numeric_metadata, function(col) {
-    is_numeric <- suppressWarnings(!any(is.na(as.numeric(as.character(col)))))  # Check if conversion to numeric is possible
-    return(is_numeric)
-  })
-
-  # Ensure numeric_cols is a logical vector
-  if (length(numeric_cols) == 0) {
-    numeric_cols <- logical(0)  # Handle case where there are no columns
-  } else {
-    numeric_cols <- as.logical(numeric_cols)  # Convert to logical vector
-  }
-
-  # Only keep numeric columns with > 10 unique values
-  if (any(numeric_cols)) {
-    numeric_metadata_filtered <- numeric_metadata[, numeric_cols, drop = FALSE]
-  } else {
-    numeric_metadata_filtered <- data.frame()  # Create an empty data frame if no numeric columns
-  }
-
-  # Check if we have any numeric columns to include
-  if (ncol(numeric_metadata_filtered) > 0) {
-    metadata_final <- cbind(metadata_filtered, numeric_metadata_filtered)
-  } else {
-    metadata_final <- metadata_filtered
-  }
-
-  # Create annotation colors dynamically for categorical fields
-  annotation_colors <- list()
-  for (name in names(metadata_final)) {
-    if (name %in% names(numeric_metadata_filtered)) {
-      next
-    }
-
-    if (name == field) {
-      levels <- unique(metadata_final[[name]])
-      if (case == levels[1]) {
-        annotation_colors[[name]] <- c(RColorBrewer::brewer.pal(3, "Set1")[1], RColorBrewer::brewer.pal(3, "Set1")[3])
-      } else {
-        annotation_colors[[name]] <- c(RColorBrewer::brewer.pal(3, "Set1")[3], RColorBrewer::brewer.pal(3, "Set1")[1])
-      }
-      names(annotation_colors[[name]]) <- levels
-    } else {
-      levels <- unique(metadata_final[[name]])
-      annotation_colors[[name]] <- RColorBrewer::brewer.pal(length(levels), "Set3")[1:length(levels)]
-      names(annotation_colors[[name]]) <- levels
-    }
-  }
-
-  if (ncol(numeric_metadata_filtered) > 0) {
-    for (name in names(numeric_metadata_filtered)) {
-      annotation_colors[[name]] <- colorRampPalette(c("lightblue", "blue"))(100)
-    }
-    metadata_final[names(numeric_metadata_filtered)] <- lapply(metadata_final[names(numeric_metadata_filtered)], as.numeric)
-  }
 
   pheat <- pheatmap(
     data,
@@ -864,13 +865,8 @@ heatmap_mod <- function(data, metadata, field, case, distance, method, show_cols
     clustering_distance_rows = distance,
     clustering_distance_cols = distance,
     clustering_method = method,
-    annotation_col = metadata_final,
-    color = colorRampPalette(rev(brewer.pal(9, "YlGnBu")))(1000),
-    show_rownames = show_rows,
-    show_colnames = show_cols,
     cutree_cols = cutreeCols,
-    cutree_rows = cutreeRows,
-    annotation_colors = annotation_colors
+    cutree_rows = cutreeRows
   )
 
   # Extract row and column clustering
