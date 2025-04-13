@@ -17,7 +17,8 @@ miRVAna is a web-based visual analytics platform for conducting differential gen
 
 ## Introduction 
 
-Gene expression analysis is among the most important means of uncovering biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, particularly within programming environments like R, there is a significant hindrance to overcome given usually limited programming expertise among researchers. To this end, we propose herein miRVAna-a user-friendly, web-based visual analytics platform that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, limma, and DESeq2 in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be enabled to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight. Furthermore, miRVAna contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, miRVAna is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
+Gene expression analysis is among the most essential means of uncovering the biological mechanisms of diseases and identifying potential biomarkers. Whereas there are many tools to perform DE analyses, particularly within programming environments like R, there is a significant hindrance to overcome given the usually limited programming expertise among researchers. To this end, we propose herein miRVAna, a user-friendly, web-based visual analytics platform that enables access to advanced gene expression analytical techniques. Methods of integrated DE analysis, like t-tests, limma, DESeq2, and Wilcoxon in one GUI, allow users to do their analysis without prior coding. In this way, researchers, biologists, and doctors will be able to reduce efforts in interpreting the results instead of writing complex code. It enables the investigation of raw and pre-processed gene expression datasets into a rich set of visualizations, such as histograms, volcano plots, scatterplots, and PCA graphs that enable deep insight.
+Furthermore, miRVAna contains filtering and normalization functionalities and enrichment and survival analysis functionalities within one comprehensive analytical workflow. In this respect, for overcoming the limitations often observed in stand-alone tools, miRVAna is designed to enable the user to combine multiple analytical approaches and compare results among diverse computational frameworks. This flexibility is crucial when one wants to ensure robust biological interpretations. 
 
 <img src="pictures\miRVAna UI.png" alt="Dashboard Image" style="max-width: 100%; height: auto;">
 
@@ -40,11 +41,11 @@ Gene expression analysis is among the most important means of uncovering biologi
   - Perform quantile normalization.
 
 - **Statistical Testing Options:** 
-  - Perform differential gene expression analysis using three statistical methods: t-test, Limma, and DESeq. These options offer flexibility depending on the nature of the dataset and the analysis goals.
+  - Perform differential gene expression analysis using three statistical methods: t-test, Limma, DESeq2, and Wilcoxon. These options offer flexibility depending on the nature of the dataset and the analysis goals.
   - Results include p-values and adjusted p-values (False Discovery Rate - FDR) for identifying statistically significant genes.
 
 - **Enrichment Analysis:** 
-  - Conduct enrichment analysis on differentially expressed genes, helping identify pathways, functions, or gene ontologies that are overrepresented in the dataset.
+  - Conduct enrichment analysis on differentially expressed genes, helping identify pathways, functions, or gene ontologies which are overrepresented in the dataset.
   
 - **Survival Analysis:** 
   - Integrate survival data and perform survival analysis based on gene expression levels. This feature is crucial for linking gene expression patterns to patient outcomes.
@@ -63,7 +64,7 @@ Gene expression analysis is among the most important means of uncovering biologi
   - Visualize the contributions of genes to the principal components through a heatmap, making it easier to understand which genes drive the variability among samples.
 
 - **Boxplot Visualization:** 
-  - Display the distribution of gene expression values across different sample groups using boxplots. This feature allows users to quickly assess variability, outliers, and trends within the data.
+  - Display the distribution of gene expression values across different sample groups using boxplots. This feature allows users to assess variability, outliers, and trends within the data.
 
 ---
 
@@ -78,7 +79,7 @@ Gene expression analysis is among the most important means of uncovering biologi
     ```sh
     cd miRVAna
     ```  
-4. Install Git LFS (if not already installed):  
+4. Install Git LFS (if it is not already installed):  
     ```sh
     git lfs install
     ```  
@@ -92,18 +93,18 @@ Gene expression analysis is among the most important means of uncovering biologi
     docker-compose up --build
     ```  
 7. Open your web browser and go to [localhost:11765](http://localhost:11765) to access the miRVAna dashboard.  
-   Utilize the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.  
+   Use the interactive sliders and graphs to explore gene expression data and identify differentially expressed genes.  
 
-P.S. Examples one and two are so big for the heatmap, use example three for a smooth experience. Enjoy :)
+P.S. Examples one and two are too heavy for the heatmap; use example three for a smooth experience. Enjoy :)
 ---
 
 ## Usage
 
 1. **Data Upload:**
-   - Upload raw gene expression data along with associated metadata, or select from available example datasets for analysis.
+   - Upload raw gene expression data with associated metadata or select from available example datasets for analysis.
    
 2. **Select Analysis Type:**
-   - Choose between t-test, Limma, or DESeq for differential expression analysis.
+   - Choose between t-test, Limma, DESeq, or Wilcoxon for differential expression analysis.
 
 3. **Interactive Visualization:**
    - Explore the results visually through scatterplots, volcano plots, parallel coordinate plots, and PCA. 
