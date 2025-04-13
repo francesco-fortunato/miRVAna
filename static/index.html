@@ -2586,11 +2586,26 @@
         <p><span id="value"></p>
     </div>
 
+    <div id="testTypeModal"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 1000; display: none; overflow-y: auto;">
+        <div
+            style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1009; background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);">
+            <h3>Select Test Type</h3>
+            <p>Do you want to perform a paired or unpaired test?</p>
+            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 20px;">
+                <button id="pairedTestBtn"
+                    style="padding: 10px; background-color: #008CBA; color: white; border: none; border-radius: 4px; cursor: pointer;">Paired</button>
+                <button id="unpairedTestBtn"
+                    style="padding: 10px; background-color: #008CBA; color: white; border: none; border-radius: 4px; cursor: pointer;">Unpaired</button>
+            </div>
+        </div>
+    </div>
+
     <script>
 
         try {
-            // ocpu.seturl("http://localhost:11765/ocpu/lib/GEVIS/R");
-            ocpu.seturl(window.location.origin + "/ocpu/lib/GEVIS/R");
+            ocpu.seturl("http://localhost:8004/ocpu/lib/GEVIS/R");
+            //ocpu.seturl(window.location.origin + "/ocpu/lib/GEVIS/R");
         } catch (error) {
             console.log(error)
             // If an error occurs (e.g., ocpu is not defined), reload the page
@@ -2704,6 +2719,8 @@
         let zoomEnabled = true; // Flag to control zoom functionality
 
         let ridge = true
+
+        let testType = 'unpaired' // Default test type
 
         let getInteractions = document.getElementById("getInteractions")
         let selectedmiRNAs = []
@@ -5837,6 +5854,293 @@
                 // console.log(data2)
                 // console.log(data1)
 
+                selectRowBtn4.addEventListener("click", async function () {
+                    chosen_statistic = 'wilcox'
+                    event.stopPropagation(); // Prevent event bubbling
+                    // Hide the overlay
+                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
+                    if (selectMetadataOverlay) {
+                        selectMetadataOverlay.style.display = "none";
+                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
+                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
+                    }
+
+                    // Show the test type modal
+                    document.getElementById("testTypeModal").style.display = "block";
+
+                    // Wait for the user to select the test type
+                    testType = await new Promise((resolve) => {
+                        document.getElementById("pairedTestBtn").addEventListener("click", function () {
+                            document.getElementById("testTypeModal").style.display = "none";
+                            resolve('paired'); // Resolve the promise with 'paired'
+                        });
+
+                        document.getElementById("unpairedTestBtn").addEventListener("click", function () {
+                            document.getElementById("testTypeModal").style.display = "none";
+                            resolve('unpaired'); // Resolve the promise with 'unpaired'
+                        });
+                    });
+
+                    console.log("User selected test type: " + testType);
+
+                    var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
+                    var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
+                    selectedRowName = rowData[0]
+                    selectedVariable = selectedRowName
+                    // console.log(selectedRowName)
+                    first_dims = [selectedRowName]
+                    var values = rowData.slice(1); // Exclude the first value (name of the row)
+
+                    console.log("Two groups of values found:\SelectedValue 1: " + selectedValue1 + "\SelectedValue 2: " + selectedValue2);
+
+                    // Show the loading overlay
+                    document.getElementById("loadingOverlay").style.display = "block";
+
+                    console.log("REMOVED")
+
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
+
+                    var selectedValue = selectedValue1; // or group2[0] depending on which group represents the selected value
+                    chosen_meta1 = selectedValue1
+                    chosen_meta2 = selectedValue2
+
+                    // Show the loading // Assuming you have already obtained the selected row index and values from data2
+                    var dataC = [];
+                    var dataN = [];
+
+                    // console.log(data1, data2, selectedRowIndex, selectedValue)
+
+                    // Convert function to string to create the worker
+                    const workerCode = `
+                        // Function to perform data transformations
+                        function performDataTransformations(data1, data2, selectedRowIndex, selectedValue) {
+                            var dataC = [];
+                            var dataN = [];
+
+                            // console.log(data1, data2, selectedRowIndex, selectedValue)
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
+
+                                // Create new objects for dataC and dataN
+                                var newObjC = { "gene": gene };
+                                var newObjN = { "gene": gene };
+
+                                // Loop through the keys in the object and add values to newObjC and newObjN accordingly
+                                for (var key in obj) {
+                                    if (key !== Object.keys(obj)[0]) {
+                                        // Check if the value in data2 matches the selected value
+                                        if (data2[selectedRowIndex][key] === selectedValue) {
+                                            newObjC[key] = obj[key]; // Add value to newObjC
+                                        } else {
+                                            newObjN[key] = obj[key]; // Add value to newObjN
+                                        }
+                                    }
+                                }
+
+                                // Push the new objects to dataC and dataN
+                                dataC.push(newObjC);
+                                dataN.push(newObjN);
+                            }
+
+                            // Create a new array to hold the reordered data
+                            var reorderedData = [];
+
+                            // Loop through each object in data1
+                            for (var i = 0; i < data1.length; i++) {
+                                var obj = data1[i];
+                                var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
+
+                                // Find the corresponding row in dataC and dataN
+                                var rowDataN = dataN.find(row => row.gene === gene);
+                                var rowDataC = dataC.find(row => row.gene === gene);
+
+                                // Construct the new object with the desired structure
+                                var reorderedObj = { "gene": gene };
+
+                                // Add GSM values from dataN to reorderedObj
+                                for (var key in rowDataN) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataN[key];
+                                    }
+                                }
+
+                                // Add GSM values from dataC to reorderedObj
+                                for (var key in rowDataC) {
+                                    if (key !== "gene") { // Skip the gene key
+                                        reorderedObj[key] = rowDataC[key];
+                                    }
+                                }
+
+                                // Push the new object to the reorderedData array
+                                reorderedData.push(reorderedObj);
+                            }
+
+                            // Now, reorderedData contains the desired structure
+
+                            data1 = reorderedData
+
+                            case_number = Object.keys(dataC[0]).length - 1
+                            normal_number = Object.keys(dataN[0]).length - 1
+
+                            // console.log(case_number, normal_number)
+
+                            // console.log(Object.keys(dataC[0]).length - 1)
+                            // console.log(Object.keys(dataN[0]).length - 1)
+
+                            // Assuming you have obtained genes from data1
+                            var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
+
+
+                            // Calculate overall mean for data1
+                            var overall_mean = data1.map(obj => {
+                                var values = Object.values(obj).slice(1).map(parseFloat);
+                                return values.reduce((acc, val) => acc + val, 0) / values.length;
+                            });
+
+                            // Filter out rows with overall mean equal to 0
+                            var ind = overall_mean.reduce((acc, val, index) => {
+                                if (val === 0) {
+                                    // console.log("VALUE 0");
+                                    acc.push(index);
+                                }
+                                return acc;
+                            }, []);
+
+                            // Filter dataC, dataN, data1, and genes based on ind
+                            if (ind.length > 0) {
+                                dataN = dataN.filter((_, index) => !ind.includes(index));
+                                dataC = dataC.filter((_, index) => !ind.includes(index));
+                                data1 = data1.filter((_, index) => !ind.includes(index));
+                                genes = genes.filter((_, index) => !ind.includes(index));
+                            }
+
+                            // Logarithmic transformation for dataN, dataC, and data1
+                            dataN = dataN.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            dataC = dataC.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            data1 = data1.map(obj => {
+                                var newObj = {};
+                                for (var key in obj) {
+                                    if (key !== "gene") {
+                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
+                                    }
+                                }
+                                newObj["gene"] = obj["gene"];
+                                return newObj;
+                            });
+
+                            console.log("CIAO")
+
+                            // Return the processed data
+                            return {
+                                dataC: dataC,
+                                dataN: dataN,
+                                data1: data1,
+                                genes: genes, // Assuming genes are extracted from data1
+                                case_number: case_number,
+                                normal_number: normal_number
+                            };
+                        }
+
+                        // Listen for messages from the main thread
+                        self.addEventListener('message', function(e) {
+                            // Retrieve data from the message
+                            var { data1, data2, selectedRowIndex, selectedValue } = e.data;
+
+                            // Perform data transformations
+                            var result = performDataTransformations(data1, data2, selectedRowIndex, selectedValue);
+
+                            // Send the result back to the main thread
+                            postMessage(result);
+                        }, false);
+                    `;
+
+                    // Create a Blob object from the worker code string
+                    const blob = new Blob([workerCode], { type: 'application/javascript' });
+
+                    // Create a URL for the blob object
+                    const blobURL = URL.createObjectURL(blob);
+
+                    // Create a new web worker from the blob URL
+                    const worker = new Worker(blobURL);
+
+                    // Promisify the web worker
+                    function runWorker(worker, message) {
+                        return new Promise((resolve, reject) => {
+                            worker.onmessage = resolve;
+                            worker.onerror = reject;
+                            worker.postMessage(message);
+                        });
+                    }
+
+                    // Start the data transformation process in the worker
+                    runWorker(worker, {
+                        data1: data1,
+                        data2: data2,
+                        selectedRowIndex: selectedRowIndex,
+                        selectedValue: selectedValue1 // Change this to selectedValue2 if needed
+                    }).then(result => {
+                        console.log(result)
+                        // Process the returned data
+                        dataC = result.data.dataC;
+                        dataN = result.data.dataN;
+                        data1 = result.data.data1;
+                        case_number = result.data.case_number;
+                        normal_number = result.data.normal_number;
+                        genes = result.data.genes;
+                        // dataC, dataN, data1, genes, case_number, normal_number = result.data;
+
+                        // Update your UI or further process the data as needed
+                        console.log(dataC);
+                        console.log(dataN);
+                        console.log(data1);
+                        console.log(genes);
+                        console.log(case_number);
+                        console.log(normal_number);
+
+                        // Hide the loading overlay after all operations are complete
+                        document.getElementById("loadingOverlay").style.display = "none";
+
+                        // Terminate the web worker
+                        worker.terminate();
+
+                        // Start the next step
+                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic, second_time);
+
+                    }).catch(error => {
+                        console.error('Error in web worker:', error);
+
+                        // Hide the loading overlay on error
+                        document.getElementById("loadingOverlay").style.display = "none";
+
+                        // Terminate the web worker
+                        worker.terminate();
+                    });
+
+                })
+
                 selectRowBtn2.addEventListener("click", async function () {
                     chosen_statistic = 'limma'
                     event.stopPropagation(); // Prevent event bubbling
@@ -6594,277 +6898,7 @@
                         // Terminate the web worker
                         worker.terminate();
                     });
-
-
                 });
-                selectRowBtn4.addEventListener("click", async function () {
-
-                    chosen_statistic = 'wilcox'
-                    event.stopPropagation(); // Prevent event bubbling
-                    var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
-                    var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
-                    selectedRowName = rowData[0]
-                    selectedVariable = selectedRowName
-                    // console.log(selectedRowName)
-                    first_dims = [selectedRowName]
-                    var values = rowData.slice(1); // Exclude the first value (name of the row)
-
-                    console.log("Two groups of values found:\SelectedValue 1: " + selectedValue1 + "\SelectedValue 2: " + selectedValue2);
-
-                    // Hide the overlay
-                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
-                    if (selectMetadataOverlay) {
-                        selectMetadataOverlay.style.display = "none";
-                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
-                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
-                    }
-
-                    // Show the loading overlay
-                    document.getElementById("loadingOverlay").style.display = "block";
-
-                    console.log("REMOVED")
-
-                    await new Promise(resolve => setTimeout(resolve, 100)); // Simulating async operation
-
-                    var selectedValue = selectedValue1; // or group2[0] depending on which group represents the selected value
-                    chosen_meta1 = selectedValue1
-                    chosen_meta2 = selectedValue2
-
-
-                    // Show the loading // Assuming you have already obtained the selected row index and values from data2
-                    var dataC = [];
-                    var dataN = [];
-
-                    // Convert function to string to create the worker
-                    const workerCode = `
-                        // Function to perform data transformations
-                        function performDataTransformations(data1, data2, selectedRowIndex, selectedValue) {
-                            var dataC = [];
-                            var dataN = [];
-
-                            // console.log(data1, data2, selectedRowIndex, selectedValue)
-
-                            // Loop through each object in data1
-                            for (var i = 0; i < data1.length; i++) {
-                                var obj = data1[i];
-                                var gene = obj[Object.keys(obj)[0]]; // Get the gene name from the first property of the object
-
-                                // Create new objects for dataC and dataN
-                                var newObjC = { "gene": gene };
-                                var newObjN = { "gene": gene };
-
-                                // Loop through the keys in the object and add values to newObjC and newObjN accordingly
-                                for (var key in obj) {
-                                    if (key !== Object.keys(obj)[0]) {
-                                        // Check if the value in data2 matches the selected value
-                                        if (data2[selectedRowIndex][key] === selectedValue) {
-                                            newObjC[key] = obj[key]; // Add value to newObjC
-                                        } else {
-                                            newObjN[key] = obj[key]; // Add value to newObjN
-                                        }
-                                    }
-                                }
-
-                                // Push the new objects to dataC and dataN
-                                dataC.push(newObjC);
-                                dataN.push(newObjN);
-                            }
-
-                            // Create a new array to hold the reordered data
-                            var reorderedData = [];
-
-                            // Loop through each object in data1
-                            for (var i = 0; i < data1.length; i++) {
-                                var obj = data1[i];
-                                var gene = obj[Object.keys(obj)[0]]; // Get the first value of the object
-
-                                // Find the corresponding row in dataC and dataN
-                                var rowDataN = dataN.find(row => row.gene === gene);
-                                var rowDataC = dataC.find(row => row.gene === gene);
-
-                                // Construct the new object with the desired structure
-                                var reorderedObj = { "gene": gene };
-
-                                // Add GSM values from dataN to reorderedObj
-                                for (var key in rowDataN) {
-                                    if (key !== "gene") { // Skip the gene key
-                                        reorderedObj[key] = rowDataN[key];
-                                    }
-                                }
-
-                                // Add GSM values from dataC to reorderedObj
-                                for (var key in rowDataC) {
-                                    if (key !== "gene") { // Skip the gene key
-                                        reorderedObj[key] = rowDataC[key];
-                                    }
-                                }
-
-                                // Push the new object to the reorderedData array
-                                reorderedData.push(reorderedObj);
-                            }
-
-                            // Now, reorderedData contains the desired structure
-
-                            data1 = reorderedData
-
-                            case_number = Object.keys(dataC[0]).length - 1
-                            normal_number = Object.keys(dataN[0]).length - 1
-
-                            // console.log(case_number, normal_number)
-
-                            // console.log(Object.keys(dataC[0]).length - 1)
-                            // console.log(Object.keys(dataN[0]).length - 1)
-
-                            // Assuming you have obtained genes from data1
-                            var genes = data1.map(obj => obj[Object.keys(obj)[0]]);
-
-
-                            // Calculate overall mean for data1
-                            var overall_mean = data1.map(obj => {
-                                var values = Object.values(obj).slice(1).map(parseFloat);
-                                return values.reduce((acc, val) => acc + val, 0) / values.length;
-                            });
-
-                            // Filter out rows with overall mean equal to 0
-                            var ind = overall_mean.reduce((acc, val, index) => {
-                                if (val === 0) {
-                                    // console.log("VALUE 0");
-                                    acc.push(index);
-                                }
-                                return acc;
-                            }, []);
-
-                            // Filter dataC, dataN, data1, and genes based on ind
-                            if (ind.length > 0) {
-                                dataN = dataN.filter((_, index) => !ind.includes(index));
-                                dataC = dataC.filter((_, index) => !ind.includes(index));
-                                data1 = data1.filter((_, index) => !ind.includes(index));
-                                genes = genes.filter((_, index) => !ind.includes(index));
-                            }
-
-                            // Logarithmic transformation for dataN, dataC, and data1
-                            dataN = dataN.map(obj => {
-                                var newObj = {};
-                                for (var key in obj) {
-                                    if (key !== "gene") {
-                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                                    }
-                                }
-                                newObj["gene"] = obj["gene"];
-                                return newObj;
-                            });
-
-                            dataC = dataC.map(obj => {
-                                var newObj = {};
-                                for (var key in obj) {
-                                    if (key !== "gene") {
-                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                                    }
-                                }
-                                newObj["gene"] = obj["gene"];
-                                return newObj;
-                            });
-
-                            data1 = data1.map(obj => {
-                                var newObj = {};
-                                for (var key in obj) {
-                                    if (key !== "gene") {
-                                        newObj[key] = Math.log2(parseFloat(obj[key]) + 1);
-                                    }
-                                }
-                                newObj["gene"] = obj["gene"];
-                                return newObj;
-                            });
-
-                            console.log("CIAO")
-
-                            // Return the processed data
-                            return {
-                                dataC: dataC,
-                                dataN: dataN,
-                                data1: data1,
-                                genes: genes, // Assuming genes are extracted from data1
-                                case_number: case_number,
-                                normal_number: normal_number
-                            };
-                        }
-
-                        // Listen for messages from the main thread
-                        self.addEventListener('message', function(e) {
-                            // Retrieve data from the message
-                            var { data1, data2, selectedRowIndex, selectedValue } = e.data;
-
-                            // Perform data transformations
-                            var result = performDataTransformations(data1, data2, selectedRowIndex, selectedValue);
-
-                            // Send the result back to the main thread
-                            postMessage(result);
-                        }, false);
-                    `;
-
-                    // Create a Blob object from the worker code string
-                    const blob = new Blob([workerCode], { type: 'application/javascript' });
-
-                    // Create a URL for the blob object
-                    const blobURL = URL.createObjectURL(blob);
-
-                    // Create a new web worker from the blob URL
-                    const worker = new Worker(blobURL);
-
-                    // Promisify the web worker
-                    function runWorker(worker, message) {
-                        return new Promise((resolve, reject) => {
-                            worker.onmessage = resolve;
-                            worker.onerror = reject;
-                            worker.postMessage(message);
-                        });
-                    }
-
-                    // Start the data transformation process in the worker
-                    runWorker(worker, {
-                        data1: data1,
-                        data2: data2,
-                        selectedRowIndex: selectedRowIndex,
-                        selectedValue: selectedValue1 // Change this to selectedValue2 if needed
-                    }).then(result => {
-                        console.log(result)
-                        // Process the returned data
-                        dataC = result.data.dataC;
-                        dataN = result.data.dataN;
-                        data1 = result.data.data1;
-                        case_number = result.data.case_number;
-                        normal_number = result.data.normal_number;
-                        genes = result.data.genes;
-                        // dataC, dataN, data1, genes, case_number, normal_number = result.data;
-
-                        // Update your UI or further process the data as needed
-                        console.log(dataC);
-                        console.log(dataN);
-                        console.log(data1);
-                        console.log(genes);
-                        console.log(case_number);
-                        console.log(normal_number);
-
-                        // Hide the loading overlay after all operations are complete
-                        document.getElementById("loadingOverlay").style.display = "none";
-
-                        // Terminate the web worker
-                        worker.terminate();
-
-                        // Start the next step
-                        start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic, second_time);
-
-                    }).catch(error => {
-                        console.error('Error in web worker:', error);
-
-                        // Hide the loading overlay on error
-                        document.getElementById("loadingOverlay").style.display = "none";
-
-                        // Terminate the web worker
-                        worker.terminate();
-                    });
-                });
-
                 buttonContainer.appendChild(div1);
                 buttonContainer.appendChild(div2);
                 buttonContainer.appendChild(div3);
@@ -7497,6 +7531,198 @@
                                         data: data_copy,
                                         N: normal_number,
                                         M: case_number
+                                    }, function (session) {
+                                        var filteredDataURL = session.loc + "/R/.val/json";
+                                        //console.log(session);
+                                        // Fetch the filtered data from the URL
+                                        fetch(filteredDataURL)
+                                            .then(response => response.json())
+                                            .then(data => {
+                                                console.log(session);
+                                                // Convert pval_adj values back to numbers if needed
+                                                data.forEach(entry => {
+                                                    entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                                                });
+
+                                                old_p_adj = data
+                                                const ind = old_p_adj.reduce((result, entry, index) => {
+
+                                                    if (entry.pval_adj > threshold) {
+                                                        result.push(index);
+                                                    }
+                                                    return result;
+                                                }, []);
+
+                                                console.log(old_p_adj)
+                                                console.log(ind)
+
+
+                                                const pvalGeneSet = new Set();
+                                                old_p_adj.forEach(entry => {
+                                                    if (entry.pval_adj <= threshold) {  // Include genes that pass the p-value filter
+                                                        pvalGeneSet.add(entry.Gene);  // Assuming 'Gene' is the key for genes
+                                                    }
+                                                });
+
+                                                console.log("Number of genes passing the p-value filter:", pvalGeneSet.size);
+                                                console.log("Threshold p-value:", threshold);
+
+                                                dataC_copy_pval = dataC_copy;
+                                                dataN_copy_pval = dataN_copy;
+                                                data_copy_pval = data_copy;
+
+                                                if (pvalGeneSet.size > 0) {
+                                                    // Filter the data based on the pvalGeneSet
+                                                    dataC_copy_pval = dataC_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataC_copy
+                                                    dataN_copy_pval = dataN_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataN_copy
+                                                    data_copy_pval = data_copy.filter(entry => pvalGeneSet.has(entry.gene));    // Assuming 'gene' is the key for data_copy
+                                                    parsedLogFC = parsedLogFC.filter(entry => pvalGeneSet.has(entry.Gene));  // Assuming 'Gene' is the key for parsedLogFC
+
+                                                    console.log("Genes passed to box plot after p-value filter:", parsedLogFC.length);
+                                                }
+                                                console.log("geni tolti dal primo filtering del pval", ind.length)
+
+                                                if (ind.length > 0 || dataC_copy_pval.length > 1) {
+
+                                                    //console.log(parsedLogFC.length)
+
+                                                    // Remove entries corresponding to ind from dataN
+
+                                                    console.log("geni rimamenti dal primo filtering", data_copy.length)
+                                                    // Remove entries corresponding to ind from logFC
+
+                                                    parsedLogFC_pval = parsedLogFC
+                                                    console.log(log_thr_fc)
+                                                    console.log(parsedLogFC_origin1)
+                                                    console.log(old_p_adj)
+
+                                                    if (parsedLogFC.length == 0) {
+                                                        alert("No deg found!")
+                                                    }
+
+                                                    console.log("Promise: al box gli passo parsedlogFC", parsedLogFC.length)
+
+                                                    var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+
+                                                    console.log(sortedLogFC)
+
+                                                    var mostUpregulatedGene = sortedLogFC[0];
+                                                    var secondMostUpregulatedGene = sortedLogFC[1];
+
+                                                    var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
+                                                    var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
+
+                                                    console.log(mostUpregulatedGene)
+
+                                                    // Function to find the adjusted p-value for a given gene
+                                                    function getAdjustedPValue(geneName) {
+                                                        const geneInfo = old_p_adj.find(g => g.Gene === geneName);
+                                                        return geneInfo ? geneInfo.pval_adj : null; // Return the p-value if the gene is found
+                                                    }
+
+                                                    var mostUpregulatedGeneName = mostUpregulatedGene.Gene;
+                                                    var mostDownregulatedGeneName = mostDownregulatedGene.Gene;
+
+                                                    // Check the adjusted p-values and push the genes into selectedGeneData if conditions are met
+                                                    if (getAdjustedPValue(mostUpregulatedGeneName) < 0.05) {
+                                                        selectedGeneData.push(mostUpregulatedGeneName);
+                                                    }
+
+                                                    if (getAdjustedPValue(mostDownregulatedGeneName) < 0.05) {
+                                                        selectedGeneData.push(mostDownregulatedGeneName);
+                                                    }
+
+                                                    // Sort the genes based on their p-values (ascending order, smallest first)
+                                                    const sortedGenesByPValue = old_p_adj.sort((a, b) => a.pval_adj - b.pval_adj);
+
+                                                    // Get the top 5 genes with the smallest p-values
+                                                    const top5Genes = sortedGenesByPValue.slice(0, 10);
+
+                                                    // Push the genes into selectedGeneData if their p-value is smaller than 0.05
+                                                    top5Genes.forEach(gene => {
+                                                        if (gene.pval_adj < 0.05) {
+                                                            selectedGeneData.push(gene.Gene);
+                                                        }
+                                                    });
+                                                    const selectedGeneDataSet = new Set(selectedGeneData);
+
+                                                    selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
+
+                                                    const logFCMap = parsedLogFC_origin1.reduce((map, gene) => {
+                                                        map[gene.Gene] = gene.logFC;
+                                                        return map;
+                                                    }, {});
+
+                                                    const sortedOldPAdj = old_p_adj.sort((a, b) => a.pval_adj - b.pval_adj);
+
+                                                    // Prepare data for Differential Expressed Genes
+                                                    const geneData = sortedOldPAdj.map(gene => {
+                                                        const logFC = logFCMap[gene.Gene] !== undefined ? logFCMap[gene.Gene] : "";
+                                                        return {
+                                                            Gene: gene.Gene,
+                                                            AdjPVal: gene.pval_adj,
+                                                            LogFC: logFC
+                                                        };
+                                                    });
+
+                                                    // Initialize the DataTable for Differential Expressed Genes
+                                                    initializedifferentialUpExpressedTable(geneData);
+                                                    initializedifferentialDownExpressedTable(geneData);
+
+                                                    async function runVisualizations() {
+                                                        try {
+                                                            await dendo_heatmap();  // Wait until dendo_heatmap() is done
+                                                            miRNA_target();         // Call the next function
+                                                            updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj); // Call the next plot update
+                                                            updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+                                                            console.log(dataN_copy.length)
+                                                            var pc1Values = [];
+                                                            var pc2Values = [];
+                                                            var groupValues = [];
+                                                            console.log(data_copy_pval)
+                                                            var pca_string = "pca"
+                                                            if (!example) {
+                                                                pca_string = "pca?no_cache=1"
+                                                            }
+
+                                                            if (only_miRNAs === false) {
+                                                                toggleView(data_copy, dataC_copy, dataN_copy)
+                                                                document.getElementById("buttonSwitchContainer").style.display = "none"
+                                                            }
+                                                        } catch (error) {
+                                                            console.error("Error during visualizations:", error);
+                                                        }
+                                                    }
+
+                                                    // Call the function that runs the visualizations
+                                                    runVisualizations();
+                                                    // dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy, first_dims)
+
+                                                    // updateBoxPlot(mostUpregulatedGeneName, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+
+                                                    updateCounter();
+                                                    updateUpandDown();
+
+
+
+                                                }
+                                            });
+
+
+                                    })
+                                }
+                                else if (chosen_statistic == 'wilcox') {
+                                    updateStatisticalMethod('Wilcoxon');
+                                    var wilcox_string = "wilcox"
+                                    if (!example) {
+                                        wilcox_string = "wilcox?no_cache=1"
+                                    }
+
+                                    var req = ocpu.call(wilcox_string, {
+                                        data: data_copy,
+                                        N: normal_number,
+                                        M: case_number,
+                                        test: testType
                                     }, function (session) {
                                         var filteredDataURL = session.loc + "/R/.val/json";
                                         //console.log(session);
@@ -8773,6 +8999,176 @@
                         });
                 })
 
+            } else if (chosen_statistic == 'wilcox') {
+                console.log("data copy in iqr prima di chiamare pval", data_copy)
+                var req = ocpu.call("wilcox?no_cache=1", {
+                    data: data_copy,
+                    N: normal_number,
+                    M: case_number,
+                    test: testType
+                }, function (session) {
+                    var filteredDataURL = session.loc + "/R/.val/json";
+                    console.log(session);
+                    // Fetch the filtered data from the URL
+                    fetch(filteredDataURL)
+                        .then(response => response.json())
+                        .then(data => {
+                            // Convert pval_adj values back to numbers if needed
+                            data.forEach(entry => {
+                                entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                            });
+
+                            old_p_adj = data
+
+                            averageExpressions10C = calculateAverageLog10Expressions(dataC_copy1);
+                            averageExpressions10N = calculateAverageLog10Expressions(dataN_copy1);
+
+
+                            console.log("thr pval ", threshold)
+                            dataC_copy_pval = dataC_copy
+                            dataN_copy_pval = dataN_copy
+                            data_copy_pval = data_copy
+
+                            const pvalGeneSet = new Set();
+                            old_p_adj.forEach(entry => {
+                                if (entry.pval_adj <= threshold) {  // Include genes that pass the p-value filter
+                                    pvalGeneSet.add(entry.Gene);  // Assuming 'Gene' is the key for genes
+                                }
+                            });
+
+                            console.log("Number of genes passing the p-value filter:", pvalGeneSet.size);
+                            console.log("Threshold p-value:", threshold);
+
+                            dataC_copy_pval = dataC_copy;
+                            dataN_copy_pval = dataN_copy;
+                            data_copy_pval = data_copy;
+
+                            if (pvalGeneSet.size > 0) {
+                                // Filter the data based on the pvalGeneSet
+                                dataC_copy_pval = dataC_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataC_copy
+                                dataN_copy_pval = dataN_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataN_copy
+                                data_copy_pval = data_copy.filter(entry => pvalGeneSet.has(entry.gene));    // Assuming 'gene' is the key for data_copy
+                                parsedLogFC_pval = parsedLogFC.filter(entry => pvalGeneSet.has(entry.Gene));  // Assuming 'Gene' is the key for parsedLogFC
+                            }
+                            console.log("geni passati a box dal IQR slider", parsedLogFC.length)
+
+                            if (ridge) {
+                                updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+                            } else {
+                                updateBoxPlot(last_box, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+                            }
+
+
+                            var sortedLogFC = parsedLogFC.slice().sort((a, b) => b.logFC - a.logFC);
+
+                            var mostUpregulatedGene = sortedLogFC[0];
+                            var secondMostUpregulatedGene = sortedLogFC[1];
+
+                            var mostDownregulatedGene = sortedLogFC[sortedLogFC.length - 1];
+                            var secondMostDownregulatedGene = sortedLogFC[sortedLogFC.length - 2];
+
+                            var mostUpregulatedGeneName = mostUpregulatedGene.Gene
+                            //var secondMostUpregulatedGeneName = secondMostUpregulatedGene.Gene
+                            var mostDownregulatedGeneName = mostDownregulatedGene.Gene
+                            //var secondMostDownregulatedGeneName = secondMostDownregulatedGene.Gene
+
+
+                            genes = [mostUpregulatedGeneName, mostDownregulatedGeneName]
+                            if (selectedGeneData == []) {
+                                // Function to find the adjusted p-value for a given gene
+                                function getAdjustedPValue(geneName) {
+                                    const geneInfo = old_p_adj.find(g => g.Gene === geneName);
+                                    return geneInfo ? geneInfo.pval_adj : null; // Return the p-value if the gene is found
+                                }
+
+                                var mostUpregulatedGeneName = mostUpregulatedGene.Gene;
+                                var mostDownregulatedGeneName = mostDownregulatedGene.Gene;
+
+                                // Check the adjusted p-values and push the genes into selectedGeneData if conditions are met
+                                if (getAdjustedPValue(mostUpregulatedGeneName) < 0.05) {
+                                    selectedGeneData.push(mostUpregulatedGeneName);
+                                }
+
+                                if (getAdjustedPValue(mostDownregulatedGeneName) < 0.05) {
+                                    selectedGeneData.push(mostDownregulatedGeneName);
+                                }
+                                // Sort the genes based on their p-values (ascending order, smallest first)
+                                const sortedGenesByPValue = old_p_adj.sort((a, b) => a.pval_adj - b.pval_adj);
+
+                                // Get the top 5 genes with the smallest p-values
+                                const top5Genes = sortedGenesByPValue.slice(0, 10);
+
+                                // Push the genes into selectedGeneData if their p-value is smaller than 0.05
+                                top5Genes.forEach(gene => {
+                                    if (gene.pval_adj < 0.05) {
+                                        selectedGeneData.push(gene.Gene);
+                                    }
+                                });
+                                const selectedGeneDataSet = new Set(selectedGeneData);
+
+                                selectedGeneData = Array.from(selectedGeneDataSet); // Convert Set to array if needed
+
+
+                            }
+                            else {
+                                // Filter out genes that are not present in dataC_copy or dataN_copy
+                                selectedGeneData = selectedGeneData.filter(function (gene) {
+                                    // Check if the gene is present in dataC_copy or dataN_copy
+                                    return dataC_copy.some(function (d) { return d.gene === gene; }) ||
+                                        dataN_copy.some(function (d) { return d.gene === gene; });
+                                });
+                            }
+                            const logFCMap = parsedLogFC_origin1.reduce((map, gene) => {
+                                map[gene.Gene] = gene.logFC;
+                                return map;
+                            }, {});
+
+                            const sortedOldPAdj = old_p_adj.sort((a, b) => a.pval_adj - b.pval_adj);
+
+                            // Prepare data for Differential Expressed Genes
+                            const geneData = sortedOldPAdj.map(gene => {
+                                const logFC = logFCMap[gene.Gene] !== undefined ? logFCMap[gene.Gene] : "";
+                                return {
+                                    Gene: gene.Gene,
+                                    AdjPVal: gene.pval_adj,
+                                    LogFC: logFC
+                                };
+                            });
+
+                            // Initialize the DataTable for Differential Expressed Genes
+                            initializedifferentialUpExpressedTable(geneData);
+                            initializedifferentialDownExpressedTable(geneData);
+
+                            dendo_heatmap()
+                            // miRNA_target()
+
+                            if (currentPlot === 'volcano') {
+                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            } else if (currentPlot === 'scatter') {
+                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            } else {
+                                updateMAPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            }
+
+                            if (document.getElementById('rightPanel2').style.display !== 'none') {
+                                updatePCAandPC()
+                                document.getElementById("loadingOverlay").style.display = "none"
+                            }
+
+
+                            // // dynamicParallel(selectedGeneData, data_copy_pval, dataC_copy_pval, dataN_copy_pval, first_dims)
+                            updateCounter();
+                            updateUpandDown();
+                            // var pc1Values = [];
+                            // var pc2Values = [];
+                            // var groupValues = [];
+                            // console.log("PCA DATA COPY PVAL:", data_copy_pval)
+
+
+
+                        });
+                })
+
             } else if (chosen_statistic == 'limma') {
                 console.log("data copy in iqr prima di chiamare limma", data_copy)
                 console.log(dataC_copy)
@@ -9098,6 +9494,144 @@
                     data: data_copy,
                     N: normal_number,
                     M: case_number
+                }, function (session) {
+                    var filteredDataURL = session.loc + "/R/.val/json";
+                    console.log(session);
+                    // Fetch the filtered data from the URL
+                    fetch(filteredDataURL)
+                        .then(response => response.json())
+                        .then(data => {
+                            // Convert pval_adj values back to numbers if needed
+                            data.forEach(entry => {
+                                entry.pval_adj = parseFloat(entry.pval_adj); // Convert string to number if necessary
+                            });
+
+                            old_p_adj = data
+
+                            averageExpressions10C = calculateAverageLog10Expressions(dataC_copy1);
+                            averageExpressions10N = calculateAverageLog10Expressions(dataN_copy1);
+                            const logFCMap = parsedLogFC_origin1.reduce((map, gene) => {
+                                map[gene.Gene] = gene.logFC;
+                                return map;
+                            }, {});
+
+                            const sortedOldPAdj = old_p_adj.sort((a, b) => a.pval_adj - b.pval_adj);
+
+                            // Prepare data for Differential Expressed Genes
+                            const geneData = sortedOldPAdj.map(gene => {
+                                const logFC = logFCMap[gene.Gene] !== undefined ? logFCMap[gene.Gene] : "";
+                                return {
+                                    Gene: gene.Gene,
+                                    AdjPVal: gene.pval_adj,
+                                    LogFC: logFC
+                                };
+                            });
+
+                            // Initialize the DataTable for Differential Expressed Genes
+                            initializedifferentialUpExpressedTable(geneData);
+                            initializedifferentialDownExpressedTable(geneData);
+
+
+                            selectedGeneData = selectedGeneData.filter(function (gene) {
+                                // Check if the gene is present in dataC_copy or dataN_copy
+                                return dataC_copy.some(function (d) { return d.gene === gene; }) ||
+                                    dataN_copy.some(function (d) { return d.gene === gene; });
+                            });
+
+                            console.log(selectedGeneData)
+
+                            // dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+
+                            const ind = old_p_adj.reduce((result, entry, index) => {
+
+                                if (entry.pval_adj > threshold) {
+                                    result.push(index);
+                                }
+                                return result;
+                            }, []);
+                            dataC_copy_pval = dataC_copy
+                            dataN_copy_pval = dataN_copy
+                            data_copy_pval = data_copy
+
+                            const pvalGeneSet = new Set();
+                            old_p_adj.forEach(entry => {
+                                if (entry.pval_adj <= threshold) {  // Include genes that pass the p-value filter
+                                    pvalGeneSet.add(entry.Gene);  // Assuming 'Gene' is the key for genes
+                                }
+                            });
+
+                            console.log("Number of genes passing the p-value filter:", pvalGeneSet.size);
+                            console.log("Threshold p-value:", threshold);
+
+                            dataC_copy_pval = dataC_copy;
+                            dataN_copy_pval = dataN_copy;
+                            data_copy_pval = data_copy;
+
+                            if (pvalGeneSet.size > 0) {
+                                // Filter the data based on the pvalGeneSet
+                                dataC_copy_pval = dataC_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataC_copy
+                                dataN_copy_pval = dataN_copy.filter(entry => pvalGeneSet.has(entry.gene));  // Assuming 'gene' is the key for dataN_copy
+                                data_copy_pval = data_copy.filter(entry => pvalGeneSet.has(entry.gene));    // Assuming 'gene' is the key for data_copy
+                                parsedLogFC_pval = parsedLogFC.filter(entry => pvalGeneSet.has(entry.Gene));  // Assuming 'Gene' is the key for parsedLogFC
+
+                                console.log("Genes passed to box plot after p-value filter:", parsedLogFC_pval.length);
+                            }
+                            dendo_heatmap()
+                            // miRNA_target()
+
+                            if (currentPlot === 'volcano') {
+                                updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            } else if (currentPlot === 'scatter') {
+                                updateScatterPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            } else {
+                                updateMAPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj)
+                            }
+
+                            console.log("geni con pval minore di thr nel logFC slider", ind.length)
+
+                            if (ind.length > 0 || dataC_copy_pval.length > 1) {
+
+                                //console.log(parsedLogFC.length)
+
+                                if (ridge) {
+                                    updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+                                } else {
+                                    updateBoxPlot(last_box, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
+                                }
+                                selectedGeneData = selectedGeneData.filter(function (gene) {
+                                    // Check if the gene is present in dataC_copy or dataN_copy
+                                    return dataC_copy.some(function (d) { return d.gene === gene; }) ||
+                                        dataN_copy.some(function (d) { return d.gene === gene; });
+                                });
+
+                                console.log(selectedGeneData)
+
+                                // dynamicParallel(selectedGeneData, data_copy, dataC_copy, dataN_copy, first_dims)
+
+                                console.log(dataN_copy.length)
+                            }
+                            updateCounter();
+                            updateUpandDown();
+
+                            //   var pc1Values = [];
+                            // var pc2Values = [];
+                            // var groupValues = [];
+                            console.log("PCA DATA COPY PVAL:", data_copy_pval)
+                            if (document.getElementById('rightPanel2').style.display !== 'none') {
+                                updatePCAandPC()
+                                document.getElementById("loadingOverlay").style.display = "none"
+                            }
+
+
+                        });
+                })
+            } else if (chosen_statistic == 'wilcox') {
+
+                var req = ocpu.call("wilcox?no_cache=1", {
+                    data: data_copy,
+                    N: normal_number,
+                    M: case_number,
+                    test: testType
                 }, function (session) {
                     var filteredDataURL = session.loc + "/R/.val/json";
                     console.log(session);
