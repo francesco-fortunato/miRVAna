@@ -11,8 +11,6 @@ miRVAna is a web-based visual analytics platform for conducting differential gen
 - [Input File Format](#input-file-format)
   - [Matrix File](#matrix-file)
   - [Metadata File](#metadata-file)
-- [Docs](#docs)
-- [Contributors](#contributors)
 - [License](#license)
 
 ## Introduction 
