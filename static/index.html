@@ -2604,8 +2604,8 @@
     <script>
 
         try {
-            ocpu.seturl("http://localhost:8004/ocpu/lib/GEVIS/R");
-            //ocpu.seturl(window.location.origin + "/ocpu/lib/GEVIS/R");
+            // ocpu.seturl("http://localhost:8004/ocpu/lib/GEVIS/R");
+            ocpu.seturl(window.location.origin + "/ocpu/lib/GEVIS/R");
         } catch (error) {
             console.log(error)
             // If an error occurs (e.g., ocpu is not defined), reload the page
