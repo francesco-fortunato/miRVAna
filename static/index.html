@@ -2744,6 +2744,8 @@
             }
         }
 
+        let generateHeatmap = false
+
         // const resizer = document.querySelector('.resizer');
         // const leftPanel = document.querySelector('#leftPanel');
         // const mainDiv = document.querySelector('#main_div'); // Container for the full layout
@@ -2794,7 +2796,7 @@
             // Method 1: Check for child nodes
             console.log(heatmapDiv.innerHTML.trim() === "")
             if (heatmapDiv.innerHTML.trim() === "") {
-                dendo_heatmap()
+                if (generateHeatmap) dendro_heatmap()
             }
 
             // Wait for fade-out animation to complete before hiding them and showing the heatmap
@@ -5407,6 +5409,24 @@
                 var selectColors = document.createElement("button");
                 selectColors.textContent = "Select Color";
                 selectColors.setAttribute("style", "padding: 10px; background-color: #FFC107; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer;");
+
+                var generateHeatmapCheckbox = document.createElement("input");
+                generateHeatmapCheckbox.setAttribute("type", "checkbox");
+                generateHeatmapCheckbox.setAttribute("id", "generateHeatmapCheckbox");
+                generateHeatmapCheckbox.setAttribute("style", "margin-left: 10px;");
+                generateHeatmapCheckbox.setAttribute("checked", "checked"); // Check the checkbox by default
+
+                var generateHeatmapLabel = document.createElement("label");
+                generateHeatmapLabel.setAttribute("for", "generateHeatmapCheckbox");
+                generateHeatmapLabel.textContent = "Generate Heatmap";
+                generateHeatmapLabel.setAttribute("style", "margin-left: 5px; font-size: 16px; color: #555;");
+
+                generateHeatmapCheckbox.addEventListener("change", function () {
+                    generateHeatmap = this.checked; // Update the variable based on checkbox state
+                    console.log("Generate Heatmap:", generateHeatmap); // Log the state of the checkbox
+                });
+
+
                 data2.forEach(function (category, i) {
                     var rowData = Object.values(data2[i]); // Get the values of the selected row
                     var rowName = rowData[0];
@@ -6636,6 +6656,31 @@
 
                     chosen_statistic = 't-test'
                     event.stopPropagation(); // Prevent event bubbling
+                    // Hide the overlay
+                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
+                    if (selectMetadataOverlay) {
+                        selectMetadataOverlay.style.display = "none";
+                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
+                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
+                    }
+
+                    // Show the test type modal
+                    document.getElementById("testTypeModal").style.display = "block";
+
+                    // Wait for the user to select the test type
+                    testType = await new Promise((resolve) => {
+                        document.getElementById("pairedTestBtn").addEventListener("click", function () {
+                            document.getElementById("testTypeModal").style.display = "none";
+                            resolve('paired'); // Resolve the promise with 'paired'
+                        });
+
+                        document.getElementById("unpairedTestBtn").addEventListener("click", function () {
+                            document.getElementById("testTypeModal").style.display = "none";
+                            resolve('unpaired'); // Resolve the promise with 'unpaired'
+                        });
+                    });
+
+                    console.log("User selected test type: " + testType);
                     var selectedRowIndex = document.querySelector('input[name="metadataRow"]:checked').value;
                     var rowData = Object.values(data2[selectedRowIndex]); // Get the values of the selected row
                     selectedRowName = rowData[0]
@@ -6645,14 +6690,6 @@
                     var values = rowData.slice(1); // Exclude the first value (name of the row)
 
                     console.log("Two groups of values found:\SelectedValue 1: " + selectedValue1 + "\SelectedValue 2: " + selectedValue2);
-
-                    // Hide the overlay
-                    var selectMetadataOverlay = document.getElementById("selectMetadataOverlay");
-                    if (selectMetadataOverlay) {
-                        selectMetadataOverlay.style.display = "none";
-                        selectMetadataOverlay.style.visibility = "hidden"; // Optional, if necessary
-                        // Alternatively: $("selectMetadataOverlay").hide(); if using jQuery
-                    }
 
                     // Show the loading overlay
                     document.getElementById("loadingOverlay").style.display = "block";
@@ -6905,6 +6942,8 @@
                 buttonContainer.appendChild(div4);
 
                 selectMetadataContent.appendChild(selectColors);
+                selectMetadataContent.appendChild(generateHeatmapCheckbox);
+                selectMetadataContent.appendChild(generateHeatmapLabel);
                 selectMetadataContent.appendChild(buttonContainer);
                 selectMetadataOverlay.appendChild(selectMetadataContent);
 
@@ -6936,6 +6975,7 @@
 
 
         function start(data1, data2, selectedRowIndex, dataC, dataN, chosen_statistic, second) {
+
             if (second) {
                 d3.select("#radioBoxContainer").html("")
                 d3.select("#checkboxContainer").html("")
@@ -7280,7 +7320,7 @@
 
                                 async function runVisualizations() {
                                     try {
-                                        await dendo_heatmap();  // Wait until dendo_heatmap() is done
+                                        if (generateHeatmap) await dendro_heatmap();  // Wait until dendro_heatmap() is done
                                         miRNA_target();         // Call the next function
                                         updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
                                         if (only_miRNAs === false) {
@@ -7530,7 +7570,8 @@
                                     var req = ocpu.call(pval_string, {
                                         data: data_copy,
                                         N: normal_number,
-                                        M: case_number
+                                        M: case_number,
+                                        test: testType
                                     }, function (session) {
                                         var filteredDataURL = session.loc + "/R/.val/json";
                                         //console.log(session);
@@ -7538,6 +7579,11 @@
                                         fetch(filteredDataURL)
                                             .then(response => response.json())
                                             .then(data => {
+                                                if (data == 0) {
+                                                    alert("The number of Cases and Controls is not equal! Please check your data.")
+                                                    document.getElementById("loadingOverlay").style.display = "none"
+                                                    return 0;
+                                                }
                                                 console.log(session);
                                                 // Convert pval_adj values back to numbers if needed
                                                 data.forEach(entry => {
@@ -7671,7 +7717,7 @@
 
                                                     async function runVisualizations() {
                                                         try {
-                                                            await dendo_heatmap();  // Wait until dendo_heatmap() is done
+                                                            if (generateHeatmap) await dendro_heatmap();  // Wait until dendro_heatmap() is done
                                                             miRNA_target();         // Call the next function
                                                             updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj); // Call the next plot update
                                                             updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
@@ -7882,7 +7928,7 @@
 
                                                     async function runVisualizations() {
                                                         try {
-                                                            await dendo_heatmap();  // Wait until dendo_heatmap() is done
+                                                            if (generateHeatmap) await dendro_heatmap();  // Wait until dendro_heatmap() is done
                                                             miRNA_target();         // Call the next function
                                                             updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj); // Call the next plot update
                                                             updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
@@ -8106,7 +8152,7 @@
 
                                                     async function runVisualizations() {
                                                         try {
-                                                            await dendo_heatmap();  // Wait until dendo_heatmap() is done
+                                                            if (generateHeatmap) await dendro_heatmap();  // Wait until dendro_heatmap() is done
                                                             miRNA_target();         // Call the next function
                                                             updateVolcanoPlot(averageExpressions10N, averageExpressions10C, log_thr_fc, parsedLogFC_origin1, old_p_adj); // Call the next plot update
                                                             updateRidgePlot(selectedGeneData, parsedLogFC, dataN_copy_pval, dataC_copy_pval)
@@ -8184,73 +8230,79 @@
         }
 
         function highlightHeatmapRows() {
+            if (generateHeatmap) {
+                const indices = []
 
-            const indices = []
+                console.log(selectedGeneData)
+                d3.selectAll(".cell")
+                    .filter(function () {
+                        return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
+                    })
+                    .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
-            console.log(selectedGeneData)
-            d3.selectAll(".cell")
-                .filter(function () {
-                    return !d3.select(this).classed("selected") && !d3.select(this).classed("legend-cell");
+                selectedGeneData.forEach(name => {
+                    const index = rowLabel.indexOf(name); // Assuming rowLabel is an array of names
+                    if (index !== -1) {
+                        indices.push(index); // Add the index if found
+                    }
+                });
+                console.log(indices); // Log the collected indices
+
+                // Highlight the corresponding rows
+                indices.forEach(index => {
+                    var className = 'cr' + index; // Assuming 'cr' is the prefix for row classes
+                    d3.selectAll(`.${className}`).style("opacity", 1).classed("selected", true); // Make the cell visible
+
+                    // Highlight the row labels
+                    var labelClass = 'r' + index; // Assuming row labels have classes like 'r0', 'r1', etc.
+                    d3.selectAll(`.${labelClass}`).classed("text-highlight", true).classed("selected", true);
+                });
+
+                d3.selectAll(".rnode").each(function (d) {
+                    // console.log(d); // Log the current data object for debugging
+                    if (d.data.name && d.data.name.length > 0 && selectedGeneData.includes(d.data.name[0])) {
+
+                        d3.select(this).classed("selected", true)
+                        // Select the circle of the current node (using 'this' to refer to the current DOM element)
+                        // d3.select(this).select("circle")
+                        //     .style("stroke", function () {
+                        //         console.log(d.data.name[0])
+                        //         return (selectedGeneData.includes(d.data.name[0])) ? "red" : "none"; // Set stroke color based on condition
+                        //     })
+                        //     .attr("r", function () {
+                        //         return (selectedGeneData.includes(d.data.name[0])) ? 3.5 : 1.5; // Set radius based on condition
+                        //     });
+                    }
                 })
-                .style("opacity", 0.2); // Set these cells to be semi-transparent or gray
 
-            selectedGeneData.forEach(name => {
-                const index = rowLabel.indexOf(name); // Assuming rowLabel is an array of names
-                if (index !== -1) {
-                    indices.push(index); // Add the index if found
-                }
-            });
-            console.log(indices); // Log the collected indices
-
-            // Highlight the corresponding rows
-            indices.forEach(index => {
-                var className = 'cr' + index; // Assuming 'cr' is the prefix for row classes
-                d3.selectAll(`.${className}`).style("opacity", 1).classed("selected", true); // Make the cell visible
-
-                // Highlight the row labels
-                var labelClass = 'r' + index; // Assuming row labels have classes like 'r0', 'r1', etc.
-                d3.selectAll(`.${labelClass}`).classed("text-highlight", true).classed("selected", true);
-            });
-
-            d3.selectAll(".rnode").each(function (d) {
-                // console.log(d); // Log the current data object for debugging
-                if (d.data.name && d.data.name.length > 0 && selectedGeneData.includes(d.data.name[0])) {
-
-                    d3.select(this).classed("selected", true)
-                    // Select the circle of the current node (using 'this' to refer to the current DOM element)
-                    // d3.select(this).select("circle")
-                    //     .style("stroke", function () {
-                    //         console.log(d.data.name[0])
-                    //         return (selectedGeneData.includes(d.data.name[0])) ? "red" : "none"; // Set stroke color based on condition
-                    //     })
-                    //     .attr("r", function () {
-                    //         return (selectedGeneData.includes(d.data.name[0])) ? 3.5 : 1.5; // Set radius based on condition
-                    //     });
-                }
-            })
+            }
         }
 
         function dehighlightHeatmapRow(gene) {
-            const indextoremove = rowLabel.indexOf(gene);
 
-            var className = 'cr' + indextoremove; // Assuming 'cr' is the prefix for row classes
-            d3.selectAll(`.${className}`).style("opacity", 0.2).classed("selected", false); // Make the cell visible
+            if (generateHeatmap) {
+                const indextoremove = rowLabel.indexOf(gene);
 
-            // Highlight the row labels
-            var labelClass = 'r' + indextoremove; // Assuming row labels have classes like 'r0', 'r1', etc.
-            d3.selectAll(`.${labelClass}`).classed("text-highlight", false).classed("selected", false);
+                var className = 'cr' + indextoremove; // Assuming 'cr' is the prefix for row classes
+                d3.selectAll(`.${className}`).style("opacity", 0.2).classed("selected", false); // Make the cell visible
 
-            d3.selectAll(".rnode").each(function (d) {
-                // console.log(d); // Log the current data object for debugging
-                if (d.data.name && d.data.name.length > 0 && gene === d.data.name[0]) {
+                // Highlight the row labels
+                var labelClass = 'r' + indextoremove; // Assuming row labels have classes like 'r0', 'r1', etc.
+                d3.selectAll(`.${labelClass}`).classed("text-highlight", false).classed("selected", false);
 
-                    d3.select(this).classed("selected", false)
+                d3.selectAll(".rnode").each(function (d) {
+                    // console.log(d); // Log the current data object for debugging
+                    if (d.data.name && d.data.name.length > 0 && gene === d.data.name[0]) {
+
+                        d3.select(this).classed("selected", false)
+                    }
+                })
+
+                if (selectedGeneData.length === 0) {
+                    d3.selectAll(".cell")
+                        .style("opacity", 1); // Set these cells to be semi-transparent or gray
+
                 }
-            })
-
-            if (selectedGeneData.length === 0) {
-                d3.selectAll(".cell")
-                    .style("opacity", 1); // Set these cells to be semi-transparent or gray
 
             }
         }
@@ -8835,7 +8887,8 @@
                 var req = ocpu.call("pval?no_cache=1", {
                     data: data_copy,
                     N: normal_number,
-                    M: case_number
+                    M: case_number,
+                    test: testType
                 }, function (session) {
                     var filteredDataURL = session.loc + "/R/.val/json";
                     console.log(session);
@@ -8969,7 +9022,7 @@
                             initializedifferentialUpExpressedTable(geneData);
                             initializedifferentialDownExpressedTable(geneData);
 
-                            dendo_heatmap()
+                            if (generateHeatmap) dendro_heatmap()
                             // miRNA_target()
 
                             if (currentPlot === 'volcano') {
@@ -9139,7 +9192,7 @@
                             initializedifferentialUpExpressedTable(geneData);
                             initializedifferentialDownExpressedTable(geneData);
 
-                            dendo_heatmap()
+                            if (generateHeatmap) dendro_heatmap()
                             // miRNA_target()
 
                             if (currentPlot === 'volcano') {
@@ -9335,7 +9388,7 @@
                             initializedifferentialUpExpressedTable(geneData);
                             initializedifferentialDownExpressedTable(geneData);
 
-                            dendo_heatmap()
+                            if (generateHeatmap) dendro_heatmap()
                             // miRNA_target()
 
                             if (currentPlot === 'volcano') {
@@ -9493,7 +9546,8 @@
                 var req = ocpu.call("pval?no_cache=1", {
                     data: data_copy,
                     N: normal_number,
-                    M: case_number
+                    M: case_number,
+                    test: testType
                 }, function (session) {
                     var filteredDataURL = session.loc + "/R/.val/json";
                     console.log(session);
@@ -9576,7 +9630,7 @@
 
                                 console.log("Genes passed to box plot after p-value filter:", parsedLogFC_pval.length);
                             }
-                            dendo_heatmap()
+                            if (generateHeatmap) dendro_heatmap()
                             // miRNA_target()
 
                             if (currentPlot === 'volcano') {
@@ -9623,8 +9677,10 @@
                             }
 
 
-                        });
+                        })
+
                 })
+
             } else if (chosen_statistic == 'wilcox') {
 
                 var req = ocpu.call("wilcox?no_cache=1", {
@@ -9714,7 +9770,7 @@
 
                                 console.log("Genes passed to box plot after p-value filter:", parsedLogFC_pval.length);
                             }
-                            dendo_heatmap()
+                            if (generateHeatmap) dendro_heatmap()
                             // miRNA_target()
 
                             if (currentPlot === 'volcano') {
@@ -9816,7 +9872,7 @@
                             initializedifferentialUpExpressedTable(geneData);
                             initializedifferentialDownExpressedTable(geneData);
 
-                            dendo_heatmap()
+                            if (generateHeatmap) dendro_heatmap()
                             // miRNA_target()
 
                             if (currentPlot === 'volcano') {
@@ -9974,7 +10030,7 @@
                 initializedifferentialUpExpressedTable(geneData);
                 initializedifferentialDownExpressedTable(geneData);
 
-                dendo_heatmap()
+                if (generateHeatmap) dendro_heatmap()
                 // miRNA_target()
 
                 if (currentPlot === 'volcano') {
@@ -10155,7 +10211,7 @@
                 initializedifferentialDownExpressedTable(geneData);
 
                 document.getElementById("loadingOverlay").style.display = "block"
-                dendo_heatmap()
+                if (generateHeatmap) dendro_heatmap()
                 // miRNA_target()
 
 
@@ -25510,7 +25566,7 @@
 
         }
 
-        function dendo_heatmap() {
+        function dendro_heatmap() {
             document.getElementById("loadingOverlay").style.display = "block";
             return new Promise((resolve, reject) => {
 
